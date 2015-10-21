@@ -1,8 +1,8 @@
-# MDData.jl: Multi-Dimensional Datasets
+# MDDatasets.jl: Multi-Dimensional Datasets
 
 ## Description
 
-The MDData.jl module provides tools to simplify manipulation of multi-dimensional datasets.
+The MDDatasets.jl module provides tools to simplify manipulation of multi-dimensional datasets.
 
 ### Principal Types
 
@@ -13,12 +13,12 @@ The MDData.jl module provides tools to simplify manipulation of multi-dimensiona
 
 ### Compatibility
 
-Extensive compatibility testing of MDData.jl has not been performed.  The module has been tested using the following environment(s):
+Extensive compatibility testing of MDDatasets.jl has not been performed.  The module has been tested using the following environment(s):
 
- - Linux / Julia-0.3.6 / Grace-5.1.23.
+ - Linux / Julia-0.4.0 / Grace-5.1.23.
 
 ## Disclaimer
 
-The MDData.jl module is not yet mature.  Expect significant changes.
+The MDDatasets.jl module is not yet mature.  Expect significant changes.
 
 This software is provided "as is", with no guarantee of correctness.  Use at own risk.
