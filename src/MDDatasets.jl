@@ -3,14 +3,24 @@
 module MDDatasets
 
 include("base.jl")
+include("operations.jl")
+
+#==TODO: Watch out for val() being exported by multiple modules...
+Maybe it can be defined in "Units"
+==#
 
 #Data types:
 export DataMD #Prefered abstraction for high-level functions
+export DataIndex #A way to identify parameters as indicies
 export DataScalar, Data2D
 export DataHR
 
-#Functions:
+#Accessor functions:
+export value #High-collision WARNING: other modules probably want to export "value"
 export subsets
+
+#Operations:
+export yval
 
 end
 

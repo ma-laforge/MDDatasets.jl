@@ -15,7 +15,7 @@ The MDDatasets.jl module provides tools to simplify manipulation of multi-dimens
 
 Extensive compatibility testing of MDDatasets.jl has not been performed.  The module has been tested using the following environment(s):
 
- - Linux / Julia-0.4.0 / Grace-5.1.23.
+ - Linux / Julia-0.4.0
 
 ## Disclaimer
 
