@@ -4,6 +4,7 @@ module MDDatasets
 
 include("base.jl")
 include("operations.jl")
+include("show.jl")
 
 #==TODO: Watch out for val() being exported by multiple modules...
 Maybe it can be defined in "Units"
@@ -11,7 +12,7 @@ Maybe it can be defined in "Units"
 
 #Data types:
 export DataMD #Prefered abstraction for high-level functions
-export DataIndex #A way to identify parameters as indicies
+export Index #A way to identify parameters as array indicies
 export DataScalar, Data2D
 export DataHR
 

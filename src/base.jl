@@ -7,11 +7,12 @@
 abstract DataMD #Multi-dimensional data
 abstract LeafDS <: DataMD #Leaf dataset
 
-immutable DataIndex
+#Explicitly tells multi-dispatch engine a value is meant to be an index:
+immutable Index
 	v::Int
 end
-DataIndex(idx::AbstractFloat) = DataIndex(round(Int,idx)) #Convenient
-value(x::DataIndex) = x.v
+Index(idx::AbstractFloat) = Index(round(Int,idx)) #Convenient
+value(x::Index) = x.v
 
 immutable DataScalar{T<:Number} <: LeafDS
 	v::T
@@ -46,7 +47,7 @@ end
 
 #Perform simple checks to validate data integrity
 function validate(d::Data2D)
-	@assert(d.x==d.y, "Invalid Data2D: x & y lengths do not match")
+	@assert(length(d.x)==length(d.y), "Invalid Data2D: x & y lengths do not match")
 end
 
 #==Base "vector"-like operations
@@ -56,8 +57,61 @@ function Base.length(d::Data2D)
 	return length(d.x)
 end
 
-Base.zeros(d::Data2D) = Data2D(d.x, zeros(d.y))
-Base.ones(d::Data2D) = Data2D(d.x, ones(d.y))
+#==TODO:
+Check out statistical stuff
+
+isempty, isfinite, isinf, isinteger, isnan, isposdef, isreal
+
+fft, etc
+
+2 vectors:
+atan2
+hypot
+imag
+max(v1,v2)/min
+
+Mapping ??
+map, mapreduce, mapreducedim, mapslices
+maxabs, prod, sum
+
+#Number converters
+#Bool(): map(Bool, x)
+round
+...
+
+#other
+#clamp: lo, hi
+#eachindex
+rand
+==#
+
+_basefn = [
+	:zeros, :ones, :maximum, :minimum, :abs, :abs2, :angle,
+	:imag, :real, :exponent,
+	:exp, :exp2, :exp10, :expm1,
+	:log, :log10, :log1p, :log2,
+	:ceil, :floor,
+	:asin, :asind, :asinh, :acos, :acosd, :acosh,
+	:atan, :atand, :atanh, :acot, :acotd, :acoth,
+	:asec, :asecd, :asech, :acsc, :acscd, :acsch,
+	:sin, :sind, :sinh, :cos, :cosd, :cosh,
+	:tan, :tand, :tanh, :cot, :cotd, :coth,
+	:sec, :secd, :sech, :csc, :cscd, :csch,
+	:sinpi, :cospi,
+	:sinc, :cosc, #cosc: d(sinc)/dx
+	:deg2rad, :rad2deg,
+	:cummax, :cummin, :cumprod, :cumsum,
+	:mean, :median, :middle,
+]
+
+for fn in _basefn; @eval begin
+
+#fn(Data2D)
+function Base.$fn{TX<:Number, TY<:Number}(d::Data2D{TX,TY})
+	return Data2D(d.x, $fn(d.y))
+end
+
+end; end
 
 
 #==Support basic math operations
@@ -66,53 +120,30 @@ Base.ones(d::Data2D) = Data2D(d.x, ones(d.y))
 Data2D cannot represent matrices.  Element-by-element operations will therefore
 be the default.  There is not need to use the "." operator versions.
 ==#
-function Base.(:-){TX1<:Number, TX2<:Number, TY<:Number}(d1::Data2D{TX1,TY}, d2::Data2D{TX2,TY})
+const _operators = Symbol[:-, :+, :/, :*]
+_dotop(x)=Symbol(".$x")
+
+for op in _operators; @eval begin
+
+#Data2D op Data2D
+function Base.$op{TX1<:Number, TX2<:Number, TY<:Number}(d1::Data2D{TX1,TY}, d2::Data2D{TX2,TY})
 	assertsamex(d1, d2)
-	return Data2D(d1.x, -(d1.y, d2.y))
+	return Data2D(d1.x, $(_dotop(op))(d1.y, d2.y))
 end
 
-Base.(:+)(i1::DataIndex, i2::DataIndex) = DataIndex(i1.v+i2.v)
-
-
-#==Generate friendly show functions
-===============================================================================#
-#Don't want to overwrite Base.showcompact of a vector...
-function _showcompact{T<:Number}(io::IO, x::Vector{T})
-	const maxelem = 10
-	if length(x)>maxelem
-		print(io, "[")
-		for i in 1:(maxelem-3)
-			print(io, x[i], ",")
-		end
-		print(io, "...")
-		for v in x[end-1:end]
-			print(io, ",", v)
-		end
-		print(io, "]")
-	else
-		show(io, x)
-	end
+#Data2D op Number
+function Base.$op{TX<:Number, TY<:Number, TN<:Number}(d::Data2D{TX,TY}, n::TN)
+	return Data2D(d.x, $(_dotop(op))(d.y, n))
 end
 
-#Don't show module name/subtypes for Data2D:
-function Base.show{TX<:Number, TY<:Number}(io::IO, ds::Data2D{TX,TY})
-	print(io, "Data2D(x=")
-		_showcompact(io, ds.x)
-		print(io, ",y=")
-		_showcompact(io, ds.y)
-		print(io, ")")
+#Number op Data2D
+function Base.$op{TX<:Number, TY<:Number, TN<:Number}(n::TN, d::Data2D{TX,TY})
+	return Data2D(d.x, $(_dotop(op))(n, d.y))
 end
 
-#TODO: Print array indicies:
-function Base.show(io::IO, ds::DataHR)
-	szstr = string(size(ds.subsets))
-	print(io, "DataHR$szstr[\n")
-	for subset in ds.subsets
-		print(io, " (coord): "); show(io, subset); println(io)
-	end
-	print(io, "]\n")
-
-end
+#Index op Index
+Base.$op(i1::Index, i2::Index) = Index($(_dotop(op))(i1.v, i2.v))
+end; end
 
 #Last line
 
