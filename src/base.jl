@@ -50,6 +50,10 @@ function validate(d::Data2D)
 	@assert(length(d.x)==length(d.y), "Invalid Data2D: x & y lengths do not match")
 end
 
+#==Useful functions
+===============================================================================#
+Base.copy(d::Data2D) = Data2D(d.x, copy(d.y))
+
 #==Base "vector"-like operations
 ===============================================================================#
 function Base.length(d::Data2D)

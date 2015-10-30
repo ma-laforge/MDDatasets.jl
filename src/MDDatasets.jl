@@ -5,6 +5,7 @@ module MDDatasets
 include("base.jl")
 include("operations.jl")
 include("show.jl")
+include("vectorop.jl")
 
 #==TODO: Watch out for val() being exported by multiple modules...
 Maybe it can be defined in "Units"
@@ -22,6 +23,7 @@ export subsets
 
 #Operations:
 export yval
+export shift
 
 end
 
