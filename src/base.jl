@@ -18,6 +18,11 @@ immutable DataScalar{T<:Number} <: LeafDS
 	v::T
 end
 
+immutable Point2D{TX<:Number, TY<:Number}
+	x::TX
+	y::TY
+end
+
 #Data2D, y(x): optimized for processing on y-data
 #(All y-data points are stored contiguously)
 type Data2D{TX<:Number, TY<:Number} <: LeafDS
@@ -39,6 +44,7 @@ subsets{T<:LeafDS}(ds::T) = [ds]
 
 #==Useful assertions
 ===============================================================================#
+#ASSERT SORTED
 
 #Will have to remove this as a requirement
 function assertsamex(d1::Data2D, d2::Data2D)
@@ -53,6 +59,110 @@ end
 #==Useful functions
 ===============================================================================#
 Base.copy(d::Data2D) = Data2D(d.x, copy(d.y))
+
+#Default linear interpolation:
+#NOTE:
+#    -Assumes value is zero when out of bounds
+#TODO: inline?
+#function interpolate{TX<:Number, TY<:Number}(d1::Data2D{TX,TY}; x::TX=0)
+#end
+
+function interpolate{TX<:Number, TY<:Number}(p1::Point2D{TX,TY}, p2::Point2D{TX,TY}; x::TX=0)
+	m = (p2.y-p1.y) / (p2.x-p1.x)
+	return m*(x-p1.x)+p1.y
+end
+
+Point2D(d::Data2D, i::Int) = Point2D(d.x[i], d.y[i])
+
+function applydisjoint{TX<:Number, TY1<:Number, TY2<:Number}(fn::Function, d1::Data2D{TX,TY1}, d2::Data2D{TX,TY2})
+	@assert(false, "Currently no support for disjoint datasets")
+end
+
+#Apply a function of two scalars to two Data2D objects:
+#NOTE:
+#   -Do not use "map", because this is more complex than one-to-one mapping
+#   -Assumes ordered x-values
+function apply{TX<:Number, TY1<:Number, TY2<:Number}(fn::Function, d1::Data2D{TX,TY1}, d2::Data2D{TX,TY2})
+	zero1 = zero(TY1); zero2 = zero(TY2)
+	npts = length(d1)+length(d2)+1 #Allocate for worse case
+	x = zeros(TX, npts)
+	y = zeros(promote_type(TY1,TY2),npts)
+	_x1 = d1.x[1]; _x2 = d2.x[1] #First x-values of d1 & d2
+	x1_ = d1.x[end]; x2_ = d2.x[end] #Last x-values of d1 & d2
+
+	if _x1 > x2_ || _x2 > x1_
+		return applydisjoint(fn, d1, d2)
+	end
+
+	i = 1; i1 = 1; i2 = 1
+	_x12 = max(_x1, _x2) #First intersecting point
+	x[1] = min(_x1, _x2) #First point
+
+	while x[i] < _x2 #Only d1 has values (assume d2 is 0)
+		y[i] = fn(d1.y[i1], zero2)
+		i += 1; i1 += 1
+		x[i] = d1.x[i1]
+	end
+	while x[i] < _x1 #Only d2 has values (assume d1 is 0)
+		y[i] = fn(zero1, d2.y[i2])
+		i += 1; i2 += 1
+		x[i] = d2.x[i2]
+	end
+	x[i] = _x12
+	x12_ = min(x1_, x2_) #Last intersecting point
+	p1 = p1next = Point2D(d1, i1)
+	p2 = p2next = Point2D(d2, i2)
+	if i1 > 1; p1 = Point2D(d1, i1-1); end
+	if i2 > 1; p2 = Point2D(d2, i2-1); end
+	while x[i] < x12_ #Intersecting section of x
+		local y1, y2
+		if p1next.x == x[i]
+			y1 = p1next.y
+			i1 += 1
+			p1 = p1next; p1next = Point2D(d1, i1)
+		else
+			y1 = interpolate(p1, p1next, x=x[i])
+		end
+		if p2next.x == x[i]
+			y2 = p2next.y
+			i2 += 1
+			p2 = p2next; p2next = Point2D(d2, i2)
+		else
+			y2 = interpolate(p2, p2next, x=x[i])
+		end
+		y[i] = fn(y1, y2)
+		i+=1
+		x[i] = min(p1next.x, p2next.x)
+	end
+	#End of intersecting section:
+		y1 = interpolate(p1, p1next, x=x[i])
+		y2 = interpolate(p2, p2next, x=x[i])
+		y[i] = fn(y1, y2)
+	while x[i] < x1_ #Only d1 has values left (assume d2 is 0)
+		i += 1
+		x[i] = d1.x[i1]
+		y[i] = fn(d1.y[i1], zero2)
+		i1 += 1
+	end
+	while x[i] < x2_ #Only d2 has values left (assume d1 is 0)
+		i += 1
+		x[i] = d2.x[i2]
+		y[i] = fn(zero1, d2.y[i2])
+		i2 += 1
+	end
+	#Deal with last point:
+#==
+	if x1_ < x2_
+		y[i] = fn(zero1, d2.y[i2])
+	else
+		y[i] = fn(d1.y[i1], zero2)
+	end
+==#
+	npts = i
+
+	return Data2D(resize!(x, npts), resize!(y, npts))
+end
+
 
 #==Base "vector"-like operations
 ===============================================================================#
@@ -131,8 +241,7 @@ for op in _operators; @eval begin
 
 #Data2D op Data2D
 function Base.$op{TX1<:Number, TX2<:Number, TY<:Number}(d1::Data2D{TX1,TY}, d2::Data2D{TX2,TY})
-	assertsamex(d1, d2)
-	return Data2D(d1.x, $(_dotop(op))(d1.y, d2.y))
+	return apply(Base.$op, d1, d2)
 end
 
 #Data2D op Number

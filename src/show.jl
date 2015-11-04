@@ -38,7 +38,10 @@ function Base.show(io::IO, ds::DataHR)
 		print(io, " (coord): "); show(io, subset); println(io)
 	end
 	print(io, "]\n")
+end
 
+function Base.show(io::IO, p::Point2D)
+	print(io, "($(p.x), $(p.y))")
 end
 
 #Last line
