@@ -3,9 +3,9 @@
 module MDDatasets
 
 include("base.jl")
-include("operations.jl")
-include("show.jl")
 include("vectorop.jl")
+include("datasetop.jl")
+include("show.jl")
 
 #==TODO: Watch out for val() being exported by multiple modules...
 Maybe it can be defined in "Units"
@@ -22,7 +22,7 @@ export value #High-collision WARNING: other modules probably want to export "val
 export subsets
 
 #Operations:
-export yval
+export xval
 export shift
 
 end

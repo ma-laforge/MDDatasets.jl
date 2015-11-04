@@ -28,9 +28,19 @@ end
 type Data2D{TX<:Number, TY<:Number} <: LeafDS
 	x::Vector{TX}
 	y::Vector{TY}
+#==TODO: find a way to asser lengths:
+	function Data2D{TX<:Number, TY<:Number}(x::Vector{TX}, y::Vector{TY})
+		@assert(length(x)==length(y), "Invalid Data2D: x & y lengths do not match")
+		return new(x,y)
+	end
+==#
 end
-#Build a Data2D object from a vector:
-Data2D(r::Range) = Data2D(collect(r), collect(r))
+
+#Build a Data2D object from a x-value range (make y=x):
+function Data2D(x::Range)
+	@assert(step(x)>0, "Data must be ordered with increasing x")
+	Data2D(collect(x), collect(x))
+end
 
 #Hyper-rectangle -representation of data:
 #TODO: Implement me
@@ -44,35 +54,58 @@ subsets{T<:LeafDS}(ds::T) = [ds]
 
 #==Useful assertions
 ===============================================================================#
-#ASSERT SORTED
+#TODO: ASSERT SORTED
 
 #Will have to remove this as a requirement
 function assertsamex(d1::Data2D, d2::Data2D)
 	@assert(d1.x==d2.x, "Operation currently only supported for the same x-data")
 end
 
+#Validate data lengths:
+function validatelengths(d::Data2D)
+	@assert(length(d.x)==length(d.y), "Invalid Data2D: x & y lengths do not match")
+end
+
 #Perform simple checks to validate data integrity
 function validate(d::Data2D)
-	@assert(length(d.x)==length(d.y), "Invalid Data2D: x & y lengths do not match")
+	validatelengths(d)
 end
 
 #==Useful functions
 ===============================================================================#
 Base.copy(d::Data2D) = Data2D(d.x, copy(d.y))
 
-#Default linear interpolation:
-#NOTE:
-#    -Assumes value is zero when out of bounds
-#TODO: inline?
-#function interpolate{TX<:Number, TY<:Number}(d1::Data2D{TX,TY}; x::TX=0)
-#end
+#Obtain a Point2D structure from a Data2D dataset, at a given index.
+Point2D(d::Data2D, i::Int) = Point2D(d.x[i], d.y[i])
 
-function interpolate{TX<:Number, TY<:Number}(p1::Point2D{TX,TY}, p2::Point2D{TX,TY}; x::TX=0)
+#Interpolate between two points.
+function interpolate{TX<:Number, TY<:Number}(p1::Point2D{TX,TY}, p2::Point2D{TX,TY}; x::Number=0)
 	m = (p2.y-p1.y) / (p2.x-p1.x)
 	return m*(x-p1.x)+p1.y
 end
 
-Point2D(d::Data2D, i::Int) = Point2D(d.x[i], d.y[i])
+#Interpolate value of a Data2D dataset for a given x:
+#NOTE:
+#    -Uses linear interpolation
+#    -Assumes value is zero when out of bounds
+#    -TODO: binary search
+function value(d::Data2D; x::Number=0)
+	y = 0
+	pos = 0
+	for i in 1:length(d)
+		if d.x >= x
+			pos = i
+			break
+		end
+	end
+	if pos > 1
+		y = interpolate(Point2D(d, pos-1), Point2D(d, pos), x=x)
+	elseif 1 == pos && x == d.x[1]
+		y = d.x[1]
+	end
+	return y
+end
+
 
 function applydisjoint{TX<:Number, TY1<:Number, TY2<:Number}(fn::Function, d1::Data2D{TX,TY1}, d2::Data2D{TX,TY2})
 	@assert(false, "Currently no support for disjoint datasets")
@@ -80,6 +113,7 @@ end
 
 #Apply a function of two scalars to two Data2D objects:
 #NOTE:
+#   -Uses linear interpolation
 #   -Do not use "map", because this is more complex than one-to-one mapping
 #   -Assumes ordered x-values
 function apply{TX<:Number, TY1<:Number, TY2<:Number}(fn::Function, d1::Data2D{TX,TY1}, d2::Data2D{TX,TY2})
@@ -150,14 +184,6 @@ function apply{TX<:Number, TY1<:Number, TY2<:Number}(fn::Function, d1::Data2D{TX
 		y[i] = fn(zero1, d2.y[i2])
 		i2 += 1
 	end
-	#Deal with last point:
-#==
-	if x1_ < x2_
-		y[i] = fn(zero1, d2.y[i2])
-	else
-		y[i] = fn(d1.y[i1], zero2)
-	end
-==#
 	npts = i
 
 	return Data2D(resize!(x, npts), resize!(y, npts))
@@ -171,92 +197,4 @@ function Base.length(d::Data2D)
 	return length(d.x)
 end
 
-#==TODO:
-Check out statistical stuff
-
-isempty, isfinite, isinf, isinteger, isnan, isposdef, isreal
-
-fft, etc
-
-2 vectors:
-atan2
-hypot
-imag
-max(v1,v2)/min
-
-Mapping ??
-map, mapreduce, mapreducedim, mapslices
-maxabs, prod, sum
-
-#Number converters
-#Bool(): map(Bool, x)
-round
-...
-
-#other
-#clamp: lo, hi
-#eachindex
-rand
-==#
-
-_basefn = [
-	:zeros, :ones, :maximum, :minimum, :abs, :abs2, :angle,
-	:imag, :real, :exponent,
-	:exp, :exp2, :exp10, :expm1,
-	:log, :log10, :log1p, :log2,
-	:ceil, :floor,
-	:asin, :asind, :asinh, :acos, :acosd, :acosh,
-	:atan, :atand, :atanh, :acot, :acotd, :acoth,
-	:asec, :asecd, :asech, :acsc, :acscd, :acsch,
-	:sin, :sind, :sinh, :cos, :cosd, :cosh,
-	:tan, :tand, :tanh, :cot, :cotd, :coth,
-	:sec, :secd, :sech, :csc, :cscd, :csch,
-	:sinpi, :cospi,
-	:sinc, :cosc, #cosc: d(sinc)/dx
-	:deg2rad, :rad2deg,
-	:cummax, :cummin, :cumprod, :cumsum,
-	:mean, :median, :middle,
-]
-
-for fn in _basefn; @eval begin
-
-#fn(Data2D)
-function Base.$fn{TX<:Number, TY<:Number}(d::Data2D{TX,TY})
-	return Data2D(d.x, $fn(d.y))
-end
-
-end; end
-
-
-#==Support basic math operations
-===============================================================================#
-#==NOTE
-Data2D cannot represent matrices.  Element-by-element operations will therefore
-be the default.  There is not need to use the "." operator versions.
-==#
-const _operators = Symbol[:-, :+, :/, :*]
-_dotop(x)=Symbol(".$x")
-
-for op in _operators; @eval begin
-
-#Data2D op Data2D
-function Base.$op{TX1<:Number, TX2<:Number, TY<:Number}(d1::Data2D{TX1,TY}, d2::Data2D{TX2,TY})
-	return apply(Base.$op, d1, d2)
-end
-
-#Data2D op Number
-function Base.$op{TX<:Number, TY<:Number, TN<:Number}(d::Data2D{TX,TY}, n::TN)
-	return Data2D(d.x, $(_dotop(op))(d.y, n))
-end
-
-#Number op Data2D
-function Base.$op{TX<:Number, TY<:Number, TN<:Number}(n::TN, d::Data2D{TX,TY})
-	return Data2D(d.x, $(_dotop(op))(n, d.y))
-end
-
-#Index op Index
-Base.$op(i1::Index, i2::Index) = Index($(_dotop(op))(i1.v, i2.v))
-end; end
-
 #Last line
-

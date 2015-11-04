@@ -11,7 +11,8 @@ using MDDatasets
 d1 = Data2D(1:10.0)
 d2 = Data2D(d1.x .+ 4.5, d1.y .+ 12)
 d3 = Data2D(d1.x, d1.y .+ 12)
-d4 = Data2D(d1.x .+100, d1.y)
+d4 = Data2D(d1.x, collect(10.0:-1:1))
+d9 = Data2D(d1.x .+100, d1.y)
 
 @show d1
 @show d2

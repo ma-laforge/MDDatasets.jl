@@ -40,8 +40,16 @@ function Base.show(io::IO, ds::DataHR)
 	print(io, "]\n")
 end
 
-function Base.show(io::IO, p::Point2D)
-	print(io, "($(p.x), $(p.y))")
+function Base.show{T}(io::IO, d::DataScalar{T})
+	print(io, "DataScalar{$T}($(d.v))")
+end
+
+function Base.show{TX,TY}(io::IO, p::Point2D{TX,TY})
+	print(io, "Point2D{$TX,$TY}($(p.x), $(p.y))")
+end
+
+function Base.showcompact(io::IO, p::Point2D)
+	print(io, "pt($(p.x), $(p.y))")
 end
 
 #Last line
