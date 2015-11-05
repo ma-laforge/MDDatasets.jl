@@ -30,25 +30,32 @@ function Base.show{TX<:Number, TY<:Number}(io::IO, ds::Data2D{TX,TY})
 		print(io, ")")
 end
 
-Base.string(::Type{DataHR{Data2D}}) = "DataHR{Data2D}"
-Base.string(::Type{DataHR{DataFloat}}) = "DataHR{DataFloat}"
-Base.string(::Type{DataHR{DataInt}}) = "DataHR{DataInt}"
-Base.string(::Type{DataHR{DataComplex}}) = "DataHR{DataComplex}"
+#Also changes string()
+Base.print(io::IO, ::Type{DataHR{Data2D}}) = print(io, "DataHR{Data2D}")
+Base.print(io::IO, ::Type{DataHR{DataFloat}}) = print(io, "DataHR{DataFloat}")
+Base.print(io::IO, ::Type{DataHR{DataInt}}) = print(io, "DataHR{DataInt}")
+Base.print(io::IO, ::Type{DataHR{DataComplex}}) = print(io, "DataHR{DataComplex}")
 
-#TODO: Print array indicies:
 function Base.show(io::IO, ds::DataHR)
 	szstr = string(size(ds.subsets))
 	typestr = string(typeof(ds))
 	print(io, "$typestr$szstr[\n")
-	for i in 1:length(ds.subsets)
-		if isdefined(ds.subsets, i)
-			subset = ds.subsets[i]
-			print(io, " (coord): "); show(io, subset); println(io)
+	for coord in subscripts(ds)
+		if isdefined(ds.subsets, coord...)
+			subset = ds.subsets[coord...]
+			print(io, " $coord: "); show(io, subset); println(io)
 		else
-			println(io, " (coord): UNDEFINED")
+			println(io, " $coord: UNDEFINED")
 		end
 	end
 	print(io, "]\n")
+end
+
+function Base.show{T<:Number}(io::IO, ds::DataHR{T})
+	szstr = string(size(ds.subsets))
+	typestr = string(typeof(ds))
+	print(io, "$typestr$szstr:\n")
+	print(io, ds.subsets)
 end
 
 #==
