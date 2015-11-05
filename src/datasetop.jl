@@ -11,7 +11,7 @@ be the default.  There is not need to use the "." operator versions.
 const _operators = Symbol[:-, :+, :/, :*]
 _dotop(x)=Symbol(".$x")
 
-for op in _operators; @eval begin
+for op in _operators; @eval begin #CODEGEN--------------------------------------
 
 #Data2D op Data2D
 function Base.$op{TX1<:Number, TX2<:Number, TY<:Number}(d1::Data2D{TX1,TY}, d2::Data2D{TX2,TY})
@@ -30,7 +30,7 @@ end
 
 #Index op Index
 Base.$op(i1::Index, i2::Index) = Index($(_dotop(op))(i1.v, i2.v))
-end; end
+end; end #CODEGEN---------------------------------------------------------------
 
 
 #==Support more functionality from Base
@@ -80,17 +80,17 @@ _basefn = [
 	:mean, :median, :middle,
 ]
 
-for fn in _basefn; @eval begin
+for fn in _basefn; @eval begin #CODEGEN-----------------------------------------
 
 #fn(Data2D)
 function Base.$fn{TX<:Number, TY<:Number}(d::Data2D{TX,TY})
 	return Data2D(d.x, $fn(d.y))
 end
 
-end; end
+end; end #CODEGEN---------------------------------------------------------------
 
-Base.maximum(d::Data2D) = DataScalar(maximum(d.y))
-Base.minimum(d::Data2D) = DataScalar(minimum(d.y))
+Base.maximum(d::Data2D) = maximum(d.y)
+Base.minimum(d::Data2D) = minimum(d.y)
 
 #2-argument functions from base:
 _basefn2 = [
@@ -98,14 +98,14 @@ _basefn2 = [
 	:atan2, :hypot,
 ]
 
-for fn in _basefn2; @eval begin
+for fn in _basefn2; @eval begin #CODEGEN----------------------------------------
 
 #fn(Data2D, Data2D)
 function Base.$fn{TX<:Number, TY1<:Number, TY2<:Number}(d1::Data2D{TX,TY1}, d2::Data2D{TX,TY2})
 	return apply($fn, d1, d2)
 end
 
-end; end
+end; end #CODEGEN---------------------------------------------------------------
 
 
 #==Miscellaneous dataset operations

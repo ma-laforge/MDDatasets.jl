@@ -1,6 +1,20 @@
 #MDDatasets vector operations
 #-------------------------------------------------------------------------------
 
+#==Useful tests
+===============================================================================#
+
+#Verifies that v is strictly increasing (no repeating values):
+function isincreasing{T}(v::Vector{T})
+	prev = v[1]
+	for x in v[2:end]
+		if x <= prev
+			return false
+		end
+	end
+	return true
+end
+
 
 #==
 ===============================================================================#

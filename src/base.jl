@@ -2,10 +2,21 @@
 #-------------------------------------------------------------------------------
 
 
-#==Main data structures
+#==High-level types
 ===============================================================================#
 abstract DataMD #Multi-dimensional data
 abstract LeafDS <: DataMD #Leaf dataset
+
+
+#==Helper types (TODO: move to somewhere else?)
+===============================================================================#
+
+#Parameter sweep
+type PSweep{T}
+	id::AbstractString
+	v::Vector{T}
+#TODO: ensure increasing order?
+end
 
 #Explicitly tells multi-dispatch engine a value is meant to be an index:
 immutable Index
@@ -14,27 +25,42 @@ end
 Index(idx::AbstractFloat) = Index(round(Int,idx)) #Convenient
 value(x::Index) = x.v
 
-immutable DataScalar{T<:Number} <: LeafDS
-	v::T
-end
+#TODO: Deprecate DataScalar?? - and LeafDS?
+#immutable DataScalar{T<:Number} <: LeafDS
+#	v::T
+#end
 
 immutable Point2D{TX<:Number, TY<:Number}
 	x::TX
 	y::TY
 end
 
+
+#==Leaf data elements
+===============================================================================#
+#==Supported scalar data types: use concrete types
+   -Should make it easier for users to add functions
+	-Fewer cases to think about
+TODO:
+   -Is this a good idea?
+   -Would using DataScalar wrapper be better?==#
+typealias DataFloat Float64
+typealias DataInt Int64 #For indices, etc
+typealias DataComplex Complex{Float64}
+
 #Data2D, y(x): optimized for processing on y-data
 #(All y-data points are stored contiguously)
 type Data2D{TX<:Number, TY<:Number} <: LeafDS
 	x::Vector{TX}
 	y::Vector{TY}
-#==TODO: find a way to asser lengths:
+#==TODO: find a way to assert lengths:
 	function Data2D{TX<:Number, TY<:Number}(x::Vector{TX}, y::Vector{TY})
 		@assert(length(x)==length(y), "Invalid Data2D: x & y lengths do not match")
 		return new(x,y)
 	end
 ==#
 end
+#Data2D{TX<:Number, TY<:Number}(::Type{TX}, ::Type{TY}) = Data2D(TX[], TY[]) #Empty dataset
 
 #Build a Data2D object from a x-value range (make y=x):
 function Data2D(x::Range)
@@ -42,15 +68,46 @@ function Data2D(x::Range)
 	Data2D(collect(x), collect(x))
 end
 
+#==Multi-dimensional data
+===============================================================================#
+#Types f data to be supported by large multi-dimensional datasets:
+#typealias MDDataElem Union{Data2D,DataFloat,DataInt,DataComplex}
+
+#Asserts whether a type is allowed as an element of a DataMD container:
+elemallowed{T}(::Type{DataMD}, ::Type{T}) = false #By default
+elemallowed(::Type{DataMD}, ::Type{DataFloat}) = true
+elemallowed(::Type{DataMD}, ::Type{DataInt}) = true
+elemallowed(::Type{DataMD}, ::Type{DataComplex}) = true
+elemallowed(::Type{DataMD}, ::Type{Data2D}) = true
+
 #Hyper-rectangle -representation of data:
-#TODO: Implement me
-type DataHR <: DataMD
-	subsets::Array{Data2D}
-	#TODO: Add struct to identify parameters associated with subsets indicies
+#-------------------------------------------------------------------------------
+#==IMPORTANT:
+   -Want DataHR to support ONLY select concrete types & leaf types
+	-Want to support leaf types like Data2D in GENERIC fashion
+    (support Data2D[] ONLY - not specific versions of Data2D{X,Y} ==#
+#==NOTE:
+   -Do not restrict DataHR{T} parameter T until constructor.  This allows for
+    a nicer error message.
+      #ie: type DataHR{T<:MDDataElem} <: DataMD ==#
+type DataHR{T} <: DataMD
+	sweeps::Vector{PSweep}
+	subsets::Array{T}
+
+	function DataHR{TA,N}(sweeps::Vector{PSweep}, a::Array{TA,N})
+		@assert(elemallowed(DataMD, T),
+			"Can only create DataHR{T} for T ∈ {Data2D, DataFloat, DataInt, DataComplex}")
+		@assert(length(sweeps)==N, "Number of sweeps must match dimensionality of subsets"i)
+		return new(sweeps, a)
+	end
 end
 
-subsets(ds::DataHR) = ds.subsets
-subsets{T<:LeafDS}(ds::T) = [ds]
+#Shorthand (because default (non-parameterized) constructor was overwritten):
+DataHR{T,N}(sweeps::Vector{PSweep}, a::Array{T,N}) = DataHR{T}(sweeps, a)
+
+#Construct DataHR from Vector{PSweep}:
+call{T}(::Type{DataHR{T}}, sweeps::Vector{PSweep}) = DataHR{T}(sweeps, Array{T}(arraysize(sweeps)...))
+
 
 #==Useful assertions
 ===============================================================================#
@@ -58,22 +115,68 @@ subsets{T<:LeafDS}(ds::T) = [ds]
 
 #Will have to remove this as a requirement
 function assertsamex(d1::Data2D, d2::Data2D)
-	@assert(d1.x==d2.x, "Operation currently only supported for the same x-data")
+	@assert(d1.x==d2.x, "Operation currently only supported for the same x-data.")
+end
+
+#WARNING: relatively expensive
+function assertincreasingx(d::Data2D)
+	@assert(isincreasing(d.x), "Data2D.x must be in increasing order.")
 end
 
 #Validate data lengths:
 function validatelengths(d::Data2D)
-	@assert(length(d.x)==length(d.y), "Invalid Data2D: x & y lengths do not match")
+	@assert(length(d.x)==length(d.y), "Invalid Data2D: x & y lengths do not match.")
 end
 
 #Perform simple checks to validate data integrity
 function validate(d::Data2D)
 	validatelengths(d)
+	assertincreasingx(d)
 end
+
+
+#==Add basic functionality to datasets
+===============================================================================#
+Base.copy(d::Data2D) = Data2D(d.x, copy(d.y))
+
+subsets(ds::DataHR) = ds.subsets
+subsets{T<:LeafDS}(ds::T) = [ds]
+subscripts(d::DataHR) = [ind2sub(d.subsets,i) for i in 1:length(d.subsets)]
+sweeps(d::DataHR) = d.sweeps
+Base.names(list::Vector{PSweep}) = [s.id for s in list]
+
+parameter(d::DataHR, dim::Int, idx::Int=0) = d.sweeps[dim].v[idx]
+parameter(d::DataHR, dim::Int, coord::Tuple=0) = parameter(d, dim, coord[dim])
+function parameter(d::DataHR, id::AbstractString, idx::Int=0)
+	dim = findfirst((s)->(id==s.id), d.sweeps)
+	@assert(dim>0, "Sweep not found: $id.")
+	return parameter(d, dim, idx)
+end
+function parameter(d::DataHR, id::AbstractString, coord::Tuple=0)
+	dim = findfirst((s)->(id==s.id), d.sweeps)
+	@assert(dim>0, "Sweep not found: $id.")
+	return parameter(d, dim, coord[dim])
+end
+function parameter(d::DataHR, coord::Tuple=0)
+	result = []
+	for i in 1:length(coord)
+		push!(result, parameter(d, i, coord[i]))
+	end
+	return result
+end
+
 
 #==Useful functions
 ===============================================================================#
-Base.copy(d::Data2D) = Data2D(d.x, copy(d.y))
+
+#Compute the size of an array from a Vector{PSweep}:
+function arraysize(list::Vector{PSweep})
+	dims = Int[]
+	for s in list
+		push!(dims, length(s.v))
+	end
+	return tuple(dims...)
+end
 
 #Obtain a Point2D structure from a Data2D dataset, at a given index.
 Point2D(d::Data2D, i::Int) = Point2D(d.x[i], d.y[i])
@@ -90,6 +193,7 @@ end
 #    -Assumes value is zero when out of bounds
 #    -TODO: binary search
 function value(d::Data2D; x::Number=0)
+	validate(d) #Expensive, but might avoid headaches
 	y = 0
 	pos = 0
 	for i in 1:length(d)
@@ -117,6 +221,7 @@ end
 #   -Do not use "map", because this is more complex than one-to-one mapping
 #   -Assumes ordered x-values
 function apply{TX<:Number, TY1<:Number, TY2<:Number}(fn::Function, d1::Data2D{TX,TY1}, d2::Data2D{TX,TY2})
+	validate(d1); validate(d2); #Expensive, but might avoid headaches
 	zero1 = zero(TY1); zero2 = zero(TY2)
 	npts = length(d1)+length(d2)+1 #Allocate for worse case
 	x = zeros(TX, npts)
@@ -193,7 +298,7 @@ end
 #==Base "vector"-like operations
 ===============================================================================#
 function Base.length(d::Data2D)
-	validate(d)
+	validatelengths(d) #Should be sufficiently inexpensive
 	return length(d.x)
 end
 

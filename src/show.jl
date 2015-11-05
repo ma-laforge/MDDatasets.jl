@@ -30,19 +30,32 @@ function Base.show{TX<:Number, TY<:Number}(io::IO, ds::Data2D{TX,TY})
 		print(io, ")")
 end
 
+Base.string(::Type{DataHR{Data2D}}) = "DataHR{Data2D}"
+Base.string(::Type{DataHR{DataFloat}}) = "DataHR{DataFloat}"
+Base.string(::Type{DataHR{DataInt}}) = "DataHR{DataInt}"
+Base.string(::Type{DataHR{DataComplex}}) = "DataHR{DataComplex}"
+
 #TODO: Print array indicies:
 function Base.show(io::IO, ds::DataHR)
 	szstr = string(size(ds.subsets))
-	print(io, "DataHR$szstr[\n")
-	for subset in ds.subsets
-		print(io, " (coord): "); show(io, subset); println(io)
+	typestr = string(typeof(ds))
+	print(io, "$typestr$szstr[\n")
+	for i in 1:length(ds.subsets)
+		if isdefined(ds.subsets, i)
+			subset = ds.subsets[i]
+			print(io, " (coord): "); show(io, subset); println(io)
+		else
+			println(io, " (coord): UNDEFINED")
+		end
 	end
 	print(io, "]\n")
 end
 
+#==
 function Base.show{T}(io::IO, d::DataScalar{T})
 	print(io, "DataScalar{$T}($(d.v))")
 end
+==#
 
 function Base.show{TX,TY}(io::IO, p::Point2D{TX,TY})
 	print(io, "Point2D{$TX,$TY}($(p.x), $(p.y))")
