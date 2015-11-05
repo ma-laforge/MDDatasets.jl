@@ -2,6 +2,20 @@
 #-------------------------------------------------------------------------------
 module MDDatasets
 
+#==Suggested scalar data types
+	-Use concrete types of the largest size natively supported by processor
+   -Eventually should move to 128-bit values, etc.==#
+typealias DataFloat Float64
+typealias DataInt Int64
+typealias DataComplex Complex{Float64}
+#==NOTES:
+Don't use Int.  If this is like c, "Int" represents the "native" integer
+size/type.  That might not be the same as the largest integer that can be
+handled with reasonable efficiency
+
+No reason to have an alias for Bool.  Probably best to keep the default
+representation.==#
+
 include("vectorop.jl") #Some useful vector-only tools
 include("base.jl")
 include("datasetop.jl")

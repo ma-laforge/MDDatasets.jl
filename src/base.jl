@@ -38,15 +38,6 @@ end
 
 #==Leaf data elements
 ===============================================================================#
-#==Supported scalar data types: use concrete types
-   -Should make it easier for users to add functions
-	-Fewer cases to think about
-TODO:
-   -Is this a good idea?
-   -Would using DataScalar wrapper be better?==#
-typealias DataFloat Float64
-typealias DataInt Int64 #For indices, etc
-typealias DataComplex Complex{Float64}
 
 #Data2D, y(x): optimized for processing on y-data
 #(All y-data points are stored contiguously)
@@ -68,6 +59,7 @@ function Data2D(x::Range)
 	Data2D(collect(x), collect(x))
 end
 
+
 #==Multi-dimensional data
 ===============================================================================#
 #Types f data to be supported by large multi-dimensional datasets:
@@ -79,6 +71,9 @@ elemallowed(::Type{DataMD}, ::Type{DataFloat}) = true
 elemallowed(::Type{DataMD}, ::Type{DataInt}) = true
 elemallowed(::Type{DataMD}, ::Type{DataComplex}) = true
 elemallowed(::Type{DataMD}, ::Type{Data2D}) = true
+#==TODO:
+   -Is this a good idea?
+   -Would using DataScalar wrapper & <: LeafDS be better?==#
 
 #Hyper-rectangle -representation of data:
 #-------------------------------------------------------------------------------
@@ -111,9 +106,8 @@ call{T}(::Type{DataHR{T}}, sweeps::Vector{PSweep}) = DataHR{T}(sweeps, Array{T}(
 
 #==Useful assertions
 ===============================================================================#
-#TODO: ASSERT SORTED
 
-#Will have to remove this as a requirement
+#Make sure two datasets have the same x-coordinates:
 function assertsamex(d1::Data2D, d2::Data2D)
 	@assert(d1.x==d2.x, "Operation currently only supported for the same x-data.")
 end
@@ -135,16 +129,59 @@ function validate(d::Data2D)
 end
 
 
-#==Add basic functionality to datasets
+#==Basic Point2D functionality
+===============================================================================#
+
+
+#==Basic PSweep functionality
+===============================================================================#
+Base.names(list::Vector{PSweep}) = [s.id for s in list]
+
+#Compute the size of an array from a Vector{PSweep}:
+function arraysize(list::Vector{PSweep})
+	dims = Int[]
+	for s in list
+		push!(dims, length(s.v))
+	end
+	return tuple(dims...)
+end
+
+#==Basic LeafDS functionality
+===============================================================================#
+
+subsets{T<:LeafDS}(ds::T) = [ds]
+
+
+#==Basic Data2D functionality
 ===============================================================================#
 Base.copy(d::Data2D) = Data2D(d.x, copy(d.y))
 
+function Base.length(d::Data2D)
+	validatelengths(d) #Should be sufficiently inexpensive
+	return length(d.x)
+end
+
+#Obtain a Point2D structure from a Data2D dataset, at a given index.
+Point2D(d::Data2D, i::Int) = Point2D(d.x[i], d.y[i])
+
+#Obtain a list of y-element types in an array of Data2D
+function findytypes(a::Array{Data2D})
+	result = Set{DataType}()
+	for elem in a
+		push!(result, eltype(elem.y))
+	end
+	return [elem for elem in result]
+end
+
+
+#==Basic DataHR functionality
+===============================================================================#
 subsets(ds::DataHR) = ds.subsets
-subsets{T<:LeafDS}(ds::T) = [ds]
 subscripts(d::DataHR) = [ind2sub(d.subsets,i) for i in 1:length(d.subsets)]
 sweeps(d::DataHR) = d.sweeps
-Base.names(list::Vector{PSweep}) = [s.id for s in list]
 
+#Obtain parameter info
+#-------------------------------------------------------------------------------
 parameter(d::DataHR, dim::Int, idx::Int=0) = d.sweeps[dim].v[idx]
 parameter(d::DataHR, dim::Int, coord::Tuple=0) = parameter(d, dim, coord[dim])
 function parameter(d::DataHR, id::AbstractString, idx::Int=0)
@@ -166,20 +203,8 @@ function parameter(d::DataHR, coord::Tuple=0)
 end
 
 
-#==Useful functions
+#==Interpolations
 ===============================================================================#
-
-#Compute the size of an array from a Vector{PSweep}:
-function arraysize(list::Vector{PSweep})
-	dims = Int[]
-	for s in list
-		push!(dims, length(s.v))
-	end
-	return tuple(dims...)
-end
-
-#Obtain a Point2D structure from a Data2D dataset, at a given index.
-Point2D(d::Data2D, i::Int) = Point2D(d.x[i], d.y[i])
 
 #Interpolate between two points.
 function interpolate{TX<:Number, TY<:Number}(p1::Point2D{TX,TY}, p2::Point2D{TX,TY}; x::Number=0)
@@ -210,6 +235,8 @@ function value(d::Data2D; x::Number=0)
 	return y
 end
 
+#==Apply fn(d1,d2); where {d1,d2} ∈ Data2D have independent (but sorted) x-values
+===============================================================================#
 
 function applydisjoint{TX<:Number, TY1<:Number, TY2<:Number}(fn::Function, d1::Data2D{TX,TY1}, d2::Data2D{TX,TY2})
 	@assert(false, "Currently no support for disjoint datasets")
@@ -294,12 +321,56 @@ function apply{TX<:Number, TY1<:Number, TY2<:Number}(fn::Function, d1::Data2D{TX
 	return Data2D(resize!(x, npts), resize!(y, npts))
 end
 
+Base.promote_type{TX1,TX2,TY1,TY2}(::Type{Data2D{TX1,TY1}},::Type{Data2D{TX2,TY2}}) =
+	Data2D{promote_type(TX1,TX2),promote_type(TY1,TY2)}
 
-#==Base "vector"-like operations
+
+#==Apply fn(d); d ∈ DataHR
 ===============================================================================#
-function Base.length(d::Data2D)
-	validatelengths(d) #Should be sufficiently inexpensive
-	return length(d.x)
+function apply(fn::Function, d::DataHR)
+	results = DataHR{Data2D}(d.sweeps) #Create empty results
+	for i in 1:length(results.subsets)
+		results.subsets[i] = fn(d.subsets[i])
+	end
+	return results
+end
+
+#Functions that reduce:
+function applyreduce(fn::Function, d::DataHR{Data2D})
+	resulttype = promote_type(findytypes(d.subsets)...)
+	results = DataHR{resulttype}(d.sweeps) #Create empty results
+	for i in 1:length(results.subsets)
+		results.subsets[i] = fn(d.subsets[i])
+	end
+	return results
+end
+
+
+#==Apply fn(d1,d2); where one of {d1,d2} ∈ DataHR
+===============================================================================#
+function apply(fn::Function, d1::DataHR, d2::DataHR, args...; kwargs...)
+	@assert(d1.sweeps == d2.sweeps, "DataHR sweeps do not match")
+	results = DataHR{Data2D}(d1.sweeps) #Create empty results
+	for i in 1:length(results.subsets)
+		results.subsets[i] = fn(d1.subsets[i], d2.subsets[i], args...; kwargs...)
+	end
+	return results
+end
+
+function apply(fn::Function, d1::DataHR, d2::Union{Data2D,Number}, args...; kwargs...)
+	results = DataHR{Data2D}(d1.sweeps) #Create empty results
+	for i in 1:length(results.subsets)
+		results.subsets[i] = fn(d1.subsets[i],d2, args...; kwargs...)
+	end
+	return results
+end
+
+function apply(fn::Function, d1::Union{Data2D,Number}, d2::DataHR, args...; kwargs...)
+	results = DataHR{Data2D}(d2.sweeps) #Create empty results
+	for i in 1:length(results.subsets)
+		results.subsets[i] = fn(d1,d2.subsets[i], args...; kwargs...)
+	end
+	return results
 end
 
 #Last line
