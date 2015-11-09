@@ -13,7 +13,7 @@ abstract LeafDS <: DataMD #Leaf dataset
 
 #Parameter sweep
 type PSweep{T}
-	id::AbstractString
+	id::ASCIIString #TODO: Support UTF8?? - concrete type simplifies writing to HDF5
 	v::Vector{T}
 #TODO: ensure increasing order?
 end
@@ -53,10 +53,20 @@ type Data2D{TX<:Number, TY<:Number} <: LeafDS
 end
 #Data2D{TX<:Number, TY<:Number}(::Type{TX}, ::Type{TY}) = Data2D(TX[], TY[]) #Empty dataset
 
+function Data2D{TX<:Number}(x::Vector{TX}, y::Function)
+	ytype = typeof(y(x[1]))
+	Data2D(x, ytype[y(elem) for elem in x])
+end
+
 #Build a Data2D object from a x-value range (make y=x):
 function Data2D(x::Range)
-	@assert(step(x)>0, "Data must be ordered with increasing x")
-	Data2D(collect(x), collect(x))
+	@assert(isincreasing(x), "Data must be ordered with increasing x")
+	return Data2D(collect(x), collect(x))
+end
+
+function Data2D(x::Range, y::Function)
+	@assert(isincreasing(x), "Data must be ordered with increasing x")
+	return Data2D(collect(x), y)
 end
 
 
