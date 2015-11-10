@@ -102,7 +102,7 @@ type DataHR{T} <: DataMD
 	function DataHR{TA,N}(sweeps::Vector{PSweep}, a::Array{TA,N})
 		@assert(elemallowed(DataMD, T),
 			"Can only create DataHR{T} for T ∈ {Data2D, DataFloat, DataInt, DataComplex}")
-		@assert(length(sweeps)==N, "Number of sweeps must match dimensionality of subsets"i)
+		@assert(length(sweeps)==N, "Number of sweeps must match dimensionality of subsets")
 		return new(sweeps, a)
 	end
 end
@@ -156,6 +156,22 @@ function arraysize(list::Vector{PSweep})
 	return tuple(dims...)
 end
 
+#Returns the dimension corresponding to the given string:
+function dimension(list::Vector{PSweep}, id::AbstractString)
+	dim = findfirst((s)->(id==s.id), list)
+	@assert(dim>0, "Sweep not found: $id.")
+end
+
+#Return a list of indicies corresponding to desired sweep values:
+function indices(sweep::PSweep, vlist)
+	result = Int[]
+	for v in vlist
+		push!(result, findclosestindex(sweep.v, v))
+	end
+	return result
+end
+
+
 #==Basic LeafDS functionality
 ===============================================================================#
 
@@ -194,22 +210,68 @@ sweeps(d::DataHR) = d.sweeps
 #-------------------------------------------------------------------------------
 parameter(d::DataHR, dim::Int, idx::Int=0) = d.sweeps[dim].v[idx]
 parameter(d::DataHR, dim::Int, coord::Tuple=0) = parameter(d, dim, coord[dim])
-function parameter(d::DataHR, id::AbstractString, idx::Int=0)
-	dim = findfirst((s)->(id==s.id), d.sweeps)
-	@assert(dim>0, "Sweep not found: $id.")
-	return parameter(d, dim, idx)
-end
-function parameter(d::DataHR, id::AbstractString, coord::Tuple=0)
-	dim = findfirst((s)->(id==s.id), d.sweeps)
-	@assert(dim>0, "Sweep not found: $id.")
-	return parameter(d, dim, coord[dim])
-end
+parameter(d::DataHR, id::AbstractString, idx::Int=0) =
+	parameter(d, dimension(d.sweeps, id), idx)
+parameter(d::DataHR, id::AbstractString, coord::Tuple=0) =
+	parameter(d, dimension(d.sweeps, id), coord[dim])
+
 function parameter(d::DataHR, coord::Tuple=0)
 	result = []
 	for i in 1:length(coord)
 		push!(result, parameter(d, i, coord[i]))
 	end
 	return result
+end
+
+
+#==Dataset reductions
+===============================================================================#
+
+#Like sub(A, inds...), but with DataHR:
+function getsubarray{T}(d::DataHR{T}, inds...)
+	sweeps = PSweep[]
+	idx = 1
+	for rng in inds
+		sw = d.sweeps[idx]
+
+		#Only provide a sweep if user selects a range of more than one element:
+		addsweep = Colon == typeof(rng) || length(rng)>1
+		if addsweep
+			push!(sweeps, PSweep(sw.id, sw.v[rng]))
+		end
+		idx +=1
+	end
+	return DataHR{T}(sweeps, reshape(sub(d.subsets, inds...), arraysize(sweeps)))
+end
+
+#sub(DataHR, inds...), using key/value pairs:
+function getsubarraykw{T}(d::DataHR{T}; kwargs...)
+	sweeps = PSweep[]
+	indlist = Vector{Int}[]
+	for sweep in d.sweeps
+		keepsweep = true
+		arg = getkwarg(kwargs, symbol(sweep.id))
+		if arg != nothing
+			inds = indices(sweep, arg)
+			push!(indlist, inds)
+			if length(inds) > 1
+				keepsweep = false
+				push!(sweeps, PSweep(sweep.id, sweep.v[inds...]))
+			end
+		else #Keep sweep untouched:
+			push!(indlist, 1:length(sweep.v))
+			push!(sweeps, sweep)
+		end
+	end
+	return DataHR{T}(sweeps, reshape(sub(d.subsets, indlist...), arraysize(sweeps)))
+end
+
+function Base.sub{T}(d::DataHR{T}, args...; kwargs...)
+	if length(kwargs) > 0
+		return getsubarraykw(d, args...; kwargs...)
+	else
+		return getsubarray(d, args...)
+	end
 end
 
 

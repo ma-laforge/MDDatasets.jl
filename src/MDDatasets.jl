@@ -16,6 +16,7 @@ handled with reasonable efficiency
 No reason to have an alias for Bool.  Probably best to keep the default
 representation.==#
 
+include("functions.jl")
 include("vectorop.jl") #Some useful vector-only tools
 include("base.jl")
 include("datasetop.jl")

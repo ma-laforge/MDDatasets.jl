@@ -22,6 +22,31 @@ isincreasing(r::Range) = (step(r) > 0)
 ===============================================================================#
 
 
+#==Helper functions
+===============================================================================#
+
+#Assumes vector is ordered... Not currently checking that it is true..
+function findclosestindex(v::Vector, val)
+	const reltol =  1/1000
+	if length(v) < 2
+		if abs(1-val/v[1]) < reltol
+			return 1
+		else
+			throw("Value not found: $val")
+		end
+	end
+	vlast = v[2] #Gets an order of magnitude for first point
+	for idx in 1:length(v)
+		Δ = abs(v[idx] - vlast)
+		if abs(val-v[idx]) < reltol*Δ
+			return idx
+		end
+		vlast = v[idx]
+	end
+	throw("Value not found: $val")
+end
+
+
 #==
 ===============================================================================#
 
