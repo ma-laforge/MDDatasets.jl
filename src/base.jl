@@ -113,6 +113,19 @@ DataHR{T,N}(sweeps::Vector{PSweep}, a::Array{T,N}) = DataHR{T}(sweeps, a)
 #Construct DataHR from Vector{PSweep}:
 call{T}(::Type{DataHR{T}}, sweeps::Vector{PSweep}) = DataHR{T}(sweeps, Array{T}(arraysize(sweeps)...))
 
+#Construct DataHR{Data2D} from DataHR{Number}
+#Collapse inner-most sweep (last dimension), by default:
+function call{T<:Number}(::Type{DataHR{Data2D}}, d::DataHR{T})
+	sweeps = d.sweeps[1:end-1]
+	x = d.sweeps[end].v
+	result = DataHR{Data2D}(sweeps) #Construct empty results
+	for coord in subscripts(result)
+		y = d.subsets[coord...,:]
+		result.subsets[coord...] = Data2D(x, reshape(y, length(y)))
+	end
+	return result
+end
+
 
 #==Useful assertions
 ===============================================================================#
