@@ -44,6 +44,8 @@ export parameter #Get parameter sweep info regarding as DataHR subset
 export xval
 export shift
 
+export DataFloat, DataInt, DataComplex
+
 end
 
 #Last line
