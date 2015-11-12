@@ -5,17 +5,17 @@ using MDDatasets
 
 #No real test code yet... just run demos:
 
-@show d1 = Data2D([1,2,3], [4,5,6])
+@show d1 = DataF1([1,2,3], [4,5,6])
 sweeplist = PSweep[
 	PSweep("v1", [1,2])
 	PSweep("v2", [1,2])
 ]
-@show dhr = DataHR(sweeplist,Data2D[d1 d1; d1 d1])
+@show dhr = DataHR(sweeplist,DataF1[d1 d1; d1 d1])
 
-d1 = Data2D(1:10.0)
+d1 = DataF1(1:10.0)
 d2 = shift(d1, 4.5) + 12
 d3 = d1 + 12
-d4 = Data2D(d1.x, d1.y[end:-1:1])
+d4 = DataF1(d1.x, d1.y[end:-1:1])
 d9 = shift(d1, 100)
 
 @show d1

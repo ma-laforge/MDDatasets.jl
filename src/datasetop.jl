@@ -9,7 +9,7 @@
 #==Support basic math operations
 ===============================================================================#
 #==NOTE
-Data2D cannot represent matrices.  Element-by-element operations will therefore
+DataF1 cannot represent matrices.  Element-by-element operations will therefore
 be the default.  There is not need to use the "." operator versions.
 ==#
 const _operators = Symbol[:-, :+, :/, :*]
@@ -20,29 +20,29 @@ for op in _operators; @eval begin #CODEGEN--------------------------------------
 #Index op Index:
 Base.$op(i1::Index, i2::Index) = Index($(_dotop(op))(i1.v, i2.v))
 
-#Data2D op Data2D:
-Base.$op(d1::Data2D, d2::Data2D) = apply(Base.$op, d1, d2)
+#DataF1 op DataF1:
+Base.$op(d1::DataF1, d2::DataF1) = apply(Base.$op, d1, d2)
 
-#Data2D op Number:
-Base.$op(d::Data2D, n::Number) = Data2D(d.x, $(_dotop(op))(d.y, n))
+#DataF1 op Number:
+Base.$op(d::DataF1, n::Number) = DataF1(d.x, $(_dotop(op))(d.y, n))
 
-#Number op Data2D:
-Base.$op(n::Number, d::Data2D) = Data2D(d.x, $(_dotop(op))(n, d.y))
+#Number op DataF1:
+Base.$op(n::Number, d::DataF1) = DataF1(d.x, $(_dotop(op))(n, d.y))
 
 #DataHR op DataHR:
 Base.$op(d1::DataHR, d2::DataHR) = apply(Base.$op, d1, d2)
 
-#DataHR op Data2D/Number:
-Base.$op(d1::DataHR, d2::Union{Data2D,Number}) = apply(Base.$op, d1, d2)
+#DataHR op DataF1/Number:
+Base.$op(d1::DataHR, d2::Union{DataF1,Number}) = apply(Base.$op, d1, d2)
 
-#Data2D/Number op DataHR:
-Base.$op(d1::Union{Data2D,Number}, d2::DataHR) = apply(Base.$op, d1, d2)
+#DataF1/Number op DataHR:
+Base.$op(d1::Union{DataF1,Number}, d2::DataHR) = apply(Base.$op, d1, d2)
 
 
 end; end #CODEGEN---------------------------------------------------------------
 
 
-#==Data2D support for 1-argument functions from Base
+#==DataF1 support for 1-argument functions from Base
 ===============================================================================#
 
 #==TODO:
@@ -86,13 +86,13 @@ const _basefn1 = [:(Base.$fn) for fn in [
 
 for fn in _basefn1; @eval begin #CODEGEN----------------------------------------
 
-#fn(Data2D)
-$fn(d::Data2D) = Data2D(d.x, $fn(d.y))
+#fn(DataF1)
+$fn(d::DataF1) = DataF1(d.x, $fn(d.y))
 
 end; end #CODEGEN---------------------------------------------------------------
 
 
-#==Data2D support for 2-argument functions from Base
+#==DataF1 support for 2-argument functions from Base
 ===============================================================================#
 
 #2-argument functions from base:
@@ -104,13 +104,13 @@ const _basefn2 = [:(Base.$fn) for fn in [
 
 for fn in _basefn2; @eval begin #CODEGEN----------------------------------------
 
-#fn(Data2D, Data2D):
-$fn(d1::Data2D, d2::Data2D) = apply($fn, d1, d2)
+#fn(DataF1, DataF1):
+$fn(d1::DataF1, d2::DataF1) = apply($fn, d1, d2)
 
 end; end #CODEGEN---------------------------------------------------------------
 
 
-#==Data2D support for reducing/collpasing functions
+#==DataF1 support for reducing/collpasing functions
 ===============================================================================#
 const _baseredfn1 = [:(Base.$fn) for fn in [
 	:maximum, :minimum, :minabs, :maxabs,
@@ -120,21 +120,21 @@ const _baseredfn1 = [:(Base.$fn) for fn in [
 
 for fn in _baseredfn1; @eval begin #CODEGEN-------------------------------------
 
-#fn(Data2D):
-$fn(d::Data2D) = $fn(d.y)
+#fn(DataF1):
+$fn(d::DataF1) = $fn(d.y)
 
 end; end #CODEGEN---------------------------------------------------------------
 
 
-#==Custom 1-argument functions of Data2D
+#==Custom 1-argument functions of DataF1
 ===============================================================================#
 
 #Obtain a dataset of the x-values
-xval(d::Data2D) = Data2D(d.x, copy(d.x))
+xval(d::DataF1) = DataF1(d.x, copy(d.x))
 
 #Shifts a dataset by +/-offset:
-function shift(d::Data2D, offset::Number)
-	return Data2D(d.x.+offset, copy(d.y))
+function shift(d::DataF1, offset::Number)
+	return DataF1(d.x.+offset, copy(d.y))
 end
 shift(d::DataHR, offset::Number) = apply(d, offset)
 
@@ -143,7 +143,7 @@ const _custfn1 = [
 	:xval
 ]
 
-#==Custom 2-argument functions of Data2D
+#==Custom 2-argument functions of DataF1
 ===============================================================================#
 
 const _custfn2 = [
@@ -167,11 +167,11 @@ for fn in vcat(_basefn2, _custfn2); @eval begin #CODEGEN------------------------
 #fn(DataHR, DataHR):
 $fn(d1::DataHR, d2::DataHR) = apply($fn, d1, d2)
 
-#fn(DataHR, Data2D/Number):
-$fn(d1::DataHR, d2::Union{Data2D,Number}) = apply($fn, d1, d2)
+#fn(DataHR, DataF1/Number):
+$fn(d1::DataHR, d2::Union{DataF1,Number}) = apply($fn, d1, d2)
 
-#fn(Data2D/Number, DataHR):
-$fn(d1::Union{Data2D,Number}, d2::DataHR) = apply($fn, d1, d2)
+#fn(DataF1/Number, DataHR):
+$fn(d1::Union{DataF1,Number}, d2::DataHR) = apply($fn, d1, d2)
 
 end; end #CODEGEN---------------------------------------------------------------
 
@@ -180,7 +180,7 @@ end; end #CODEGEN---------------------------------------------------------------
 for fn in vcat(_baseredfn1, []); @eval begin #CODEGEN---------------------------
 
 #fn(DataHR)
-$fn(d::DataHR{Data2D}) = applyreduce($fn, d)
+$fn(d::DataHR{DataF1}) = applyreduce($fn, d)
 
 end; end #CODEGEN---------------------------------------------------------------
 #Last line

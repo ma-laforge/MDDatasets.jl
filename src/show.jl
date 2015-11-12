@@ -21,9 +21,9 @@ function _showcompact{T<:Number}(io::IO, x::Vector{T})
 	end
 end
 
-#Don't show module name/subtypes for Data2D:
-function Base.show{TX<:Number, TY<:Number}(io::IO, ds::Data2D{TX,TY})
-	print(io, "Data2D(x=")
+#Don't show module name/subtypes for DataF1:
+function Base.show{TX<:Number, TY<:Number}(io::IO, ds::DataF1{TX,TY})
+	print(io, "DataF1(x=")
 		_showcompact(io, ds.x)
 		print(io, ",y=")
 		_showcompact(io, ds.y)
@@ -31,7 +31,7 @@ function Base.show{TX<:Number, TY<:Number}(io::IO, ds::Data2D{TX,TY})
 end
 
 #Also changes string()
-Base.print(io::IO, ::Type{DataHR{Data2D}}) = print(io, "DataHR{Data2D}")
+Base.print(io::IO, ::Type{DataHR{DataF1}}) = print(io, "DataHR{DataF1}")
 Base.print(io::IO, ::Type{DataHR{DataFloat}}) = print(io, "DataHR{DataFloat}")
 Base.print(io::IO, ::Type{DataHR{DataInt}}) = print(io, "DataHR{DataInt}")
 Base.print(io::IO, ::Type{DataHR{DataComplex}}) = print(io, "DataHR{DataComplex}")

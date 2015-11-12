@@ -30,7 +30,7 @@ Maybe it can be defined in "Units"
 export DataMD #Prefered abstraction for high-level functions
 export PSweep #Parameter sweep
 export Index #A way to identify parameters as array indicies
-export DataFloat, DataInt, DataComplex, Data2D #Leaf data types
+export DataFloat, DataInt, DataComplex, DataF1 #Leaf data types
 export DataHR
 
 #Accessor functions:

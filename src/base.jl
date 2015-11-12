@@ -39,48 +39,48 @@ end
 #==Leaf data elements
 ===============================================================================#
 
-#Data2D, y(x): optimized for processing on y-data
+#DataF1, Function of 1 variable, y(x): optimized for processing on y-data
 #(All y-data points are stored contiguously)
-type Data2D{TX<:Number, TY<:Number} <: LeafDS
+type DataF1{TX<:Number, TY<:Number} <: LeafDS
 	x::Vector{TX}
 	y::Vector{TY}
 #==TODO: find a way to assert lengths:
-	function Data2D{TX<:Number, TY<:Number}(x::Vector{TX}, y::Vector{TY})
-		@assert(length(x)==length(y), "Invalid Data2D: x & y lengths do not match")
+	function DataF1{TX<:Number, TY<:Number}(x::Vector{TX}, y::Vector{TY})
+		@assert(length(x)==length(y), "Invalid DataF1: x & y lengths do not match")
 		return new(x,y)
 	end
 ==#
 end
-#Data2D{TX<:Number, TY<:Number}(::Type{TX}, ::Type{TY}) = Data2D(TX[], TY[]) #Empty dataset
+#DataF1{TX<:Number, TY<:Number}(::Type{TX}, ::Type{TY}) = DataF1(TX[], TY[]) #Empty dataset
 
-function Data2D{TX<:Number}(x::Vector{TX}, y::Function)
+function DataF1{TX<:Number}(x::Vector{TX}, y::Function)
 	ytype = typeof(y(x[1]))
-	Data2D(x, ytype[y(elem) for elem in x])
+	DataF1(x, ytype[y(elem) for elem in x])
 end
 
-#Build a Data2D object from a x-value range (make y=x):
-function Data2D(x::Range)
+#Build a DataF1 object from a x-value range (make y=x):
+function DataF1(x::Range)
 	@assert(isincreasing(x), "Data must be ordered with increasing x")
-	return Data2D(collect(x), collect(x))
+	return DataF1(collect(x), collect(x))
 end
 
-function Data2D(x::Range, y::Function)
+function DataF1(x::Range, y::Function)
 	@assert(isincreasing(x), "Data must be ordered with increasing x")
-	return Data2D(collect(x), y)
+	return DataF1(collect(x), y)
 end
 
 
 #==Multi-dimensional data
 ===============================================================================#
 #Types f data to be supported by large multi-dimensional datasets:
-#typealias MDDataElem Union{Data2D,DataFloat,DataInt,DataComplex}
+#typealias MDDataElem Union{DataF1,DataFloat,DataInt,DataComplex}
 
 #Asserts whether a type is allowed as an element of a DataMD container:
 elemallowed{T}(::Type{DataMD}, ::Type{T}) = false #By default
 elemallowed(::Type{DataMD}, ::Type{DataFloat}) = true
 elemallowed(::Type{DataMD}, ::Type{DataInt}) = true
 elemallowed(::Type{DataMD}, ::Type{DataComplex}) = true
-elemallowed(::Type{DataMD}, ::Type{Data2D}) = true
+elemallowed(::Type{DataMD}, ::Type{DataF1}) = true
 #==TODO:
    -Is this a good idea?
    -Would using DataScalar wrapper & <: LeafDS be better?==#
@@ -89,8 +89,8 @@ elemallowed(::Type{DataMD}, ::Type{Data2D}) = true
 #-------------------------------------------------------------------------------
 #==IMPORTANT:
    -Want DataHR to support ONLY select concrete types & leaf types
-	-Want to support leaf types like Data2D in GENERIC fashion
-    (support Data2D[] ONLY - not specific versions of Data2D{X,Y} ==#
+	-Want to support leaf types like DataF1 in GENERIC fashion
+    (support DataF1[] ONLY - not specific versions of DataF1{X,Y} ==#
 #==NOTE:
    -Do not restrict DataHR{T} parameter T until constructor.  This allows for
     a nicer error message.
@@ -101,7 +101,7 @@ type DataHR{T} <: DataMD
 
 	function DataHR{TA,N}(sweeps::Vector{PSweep}, a::Array{TA,N})
 		@assert(elemallowed(DataMD, T),
-			"Can only create DataHR{T} for T ∈ {Data2D, DataFloat, DataInt, DataComplex}")
+			"Can only create DataHR{T} for T ∈ {DataF1, DataFloat, DataInt, DataComplex}")
 		@assert(arraydims(sweeps)==N, "Number of sweeps must match dimensionality of subsets")
 		return new(sweeps, a)
 	end
@@ -113,16 +113,16 @@ DataHR{T,N}(sweeps::Vector{PSweep}, a::Array{T,N}) = DataHR{T}(sweeps, a)
 #Construct DataHR from Vector{PSweep}:
 call{T}(::Type{DataHR{T}}, sweeps::Vector{PSweep}) = DataHR{T}(sweeps, Array{T}(arraysize(sweeps)...))
 
-#Construct DataHR{Data2D} from DataHR{Number}
+#Construct DataHR{DataF1} from DataHR{Number}
 #Collapse inner-most sweep (last dimension), by default:
-function call{T<:Number}(::Type{DataHR{Data2D}}, d::DataHR{T})
+function call{T<:Number}(::Type{DataHR{DataF1}}, d::DataHR{T})
 	sweeps = d.sweeps[1:end-1]
 	x = d.sweeps[end].v
-	result = DataHR{Data2D}(sweeps) #Construct empty results
+	result = DataHR{DataF1}(sweeps) #Construct empty results
 	_sub = length(d.sweeps)>1?subscripts(result):[tuple()]
 	for coord in _sub
 		y = d.subsets[coord...,:]
-		result.subsets[coord...] = Data2D(x, reshape(y, length(y)))
+		result.subsets[coord...] = DataF1(x, reshape(y, length(y)))
 	end
 	return result
 end
@@ -132,22 +132,22 @@ end
 ===============================================================================#
 
 #Make sure two datasets have the same x-coordinates:
-function assertsamex(d1::Data2D, d2::Data2D)
+function assertsamex(d1::DataF1, d2::DataF1)
 	@assert(d1.x==d2.x, "Operation currently only supported for the same x-data.")
 end
 
 #WARNING: relatively expensive
-function assertincreasingx(d::Data2D)
-	@assert(isincreasing(d.x), "Data2D.x must be in increasing order.")
+function assertincreasingx(d::DataF1)
+	@assert(isincreasing(d.x), "DataF1.x must be in increasing order.")
 end
 
 #Validate data lengths:
-function validatelengths(d::Data2D)
-	@assert(length(d.x)==length(d.y), "Invalid Data2D: x & y lengths do not match.")
+function validatelengths(d::DataF1)
+	@assert(length(d.x)==length(d.y), "Invalid DataF1: x & y lengths do not match.")
 end
 
 #Perform simple checks to validate data integrity
-function validate(d::Data2D)
+function validate(d::DataF1)
 	validatelengths(d)
 	assertincreasingx(d)
 end
@@ -198,20 +198,20 @@ end
 subsets{T<:LeafDS}(ds::T) = [ds]
 
 
-#==Basic Data2D functionality
+#==Basic DataF1 functionality
 ===============================================================================#
-Base.copy(d::Data2D) = Data2D(d.x, copy(d.y))
+Base.copy(d::DataF1) = DataF1(d.x, copy(d.y))
 
-function Base.length(d::Data2D)
+function Base.length(d::DataF1)
 	validatelengths(d) #Should be sufficiently inexpensive
 	return length(d.x)
 end
 
-#Obtain a Point2D structure from a Data2D dataset, at a given index.
-Point2D(d::Data2D, i::Int) = Point2D(d.x[i], d.y[i])
+#Obtain a Point2D structure from a DataF1 dataset, at a given index.
+Point2D(d::DataF1, i::Int) = Point2D(d.x[i], d.y[i])
 
-#Obtain a list of y-element types in an array of Data2D
-function findytypes(a::Array{Data2D})
+#Obtain a list of y-element types in an array of DataF1
+function findytypes(a::Array{DataF1})
 	result = Set{DataType}()
 	for elem in a
 		push!(result, eltype(elem.y))
@@ -308,12 +308,12 @@ function interpolate{TX<:Number, TY<:Number}(p1::Point2D{TX,TY}, p2::Point2D{TX,
 	return m*(x-p1.x)+p1.y
 end
 
-#Interpolate value of a Data2D dataset for a given x:
+#Interpolate value of a DataF1 dataset for a given x:
 #NOTE:
 #    -Uses linear interpolation
 #    -Assumes value is zero when out of bounds
 #    -TODO: binary search
-function value(d::Data2D; x::Number=0)
+function value(d::DataF1; x::Number=0)
 	validate(d) #Expensive, but might avoid headaches
 	y = 0
 	pos = 0
@@ -331,19 +331,19 @@ function value(d::Data2D; x::Number=0)
 	return y
 end
 
-#==Apply fn(d1,d2); where {d1,d2} ∈ Data2D have independent (but sorted) x-values
+#==Apply fn(d1,d2); where {d1,d2} ∈ DataF1 have independent (but sorted) x-values
 ===============================================================================#
 
-function applydisjoint{TX<:Number, TY1<:Number, TY2<:Number}(fn::Function, d1::Data2D{TX,TY1}, d2::Data2D{TX,TY2})
+function applydisjoint{TX<:Number, TY1<:Number, TY2<:Number}(fn::Function, d1::DataF1{TX,TY1}, d2::DataF1{TX,TY2})
 	@assert(false, "Currently no support for disjoint datasets")
 end
 
-#Apply a function of two scalars to two Data2D objects:
+#Apply a function of two scalars to two DataF1 objects:
 #NOTE:
 #   -Uses linear interpolation
 #   -Do not use "map", because this is more complex than one-to-one mapping
 #   -Assumes ordered x-values
-function apply{TX<:Number, TY1<:Number, TY2<:Number}(fn::Function, d1::Data2D{TX,TY1}, d2::Data2D{TX,TY2})
+function apply{TX<:Number, TY1<:Number, TY2<:Number}(fn::Function, d1::DataF1{TX,TY1}, d2::DataF1{TX,TY2})
 	validate(d1); validate(d2); #Expensive, but might avoid headaches
 	zero1 = zero(TY1); zero2 = zero(TY2)
 	npts = length(d1)+length(d2)+1 #Allocate for worse case
@@ -414,17 +414,17 @@ function apply{TX<:Number, TY1<:Number, TY2<:Number}(fn::Function, d1::Data2D{TX
 	end
 	npts = i
 
-	return Data2D(resize!(x, npts), resize!(y, npts))
+	return DataF1(resize!(x, npts), resize!(y, npts))
 end
 
-Base.promote_type{TX1,TX2,TY1,TY2}(::Type{Data2D{TX1,TY1}},::Type{Data2D{TX2,TY2}}) =
-	Data2D{promote_type(TX1,TX2),promote_type(TY1,TY2)}
+Base.promote_type{TX1,TX2,TY1,TY2}(::Type{DataF1{TX1,TY1}},::Type{DataF1{TX2,TY2}}) =
+	DataF1{promote_type(TX1,TX2),promote_type(TY1,TY2)}
 
 
 #==Apply fn(d); d ∈ DataHR
 ===============================================================================#
 function apply(fn::Function, d::DataHR)
-	results = DataHR{Data2D}(d.sweeps) #Create empty results
+	results = DataHR{DataF1}(d.sweeps) #Create empty results
 	for i in 1:length(results.subsets)
 		results.subsets[i] = fn(d.subsets[i])
 	end
@@ -432,7 +432,7 @@ function apply(fn::Function, d::DataHR)
 end
 
 #Functions that reduce:
-function applyreduce(fn::Function, d::DataHR{Data2D})
+function applyreduce(fn::Function, d::DataHR{DataF1})
 	resulttype = promote_type(findytypes(d.subsets)...)
 	results = DataHR{resulttype}(d.sweeps) #Create empty results
 	for i in 1:length(results.subsets)
@@ -446,23 +446,23 @@ end
 ===============================================================================#
 function apply(fn::Function, d1::DataHR, d2::DataHR, args...; kwargs...)
 	@assert(d1.sweeps == d2.sweeps, "DataHR sweeps do not match")
-	results = DataHR{Data2D}(d1.sweeps) #Create empty results
+	results = DataHR{DataF1}(d1.sweeps) #Create empty results
 	for i in 1:length(results.subsets)
 		results.subsets[i] = fn(d1.subsets[i], d2.subsets[i], args...; kwargs...)
 	end
 	return results
 end
 
-function apply(fn::Function, d1::DataHR, d2::Union{Data2D,Number}, args...; kwargs...)
-	results = DataHR{Data2D}(d1.sweeps) #Create empty results
+function apply(fn::Function, d1::DataHR, d2::Union{DataF1,Number}, args...; kwargs...)
+	results = DataHR{DataF1}(d1.sweeps) #Create empty results
 	for i in 1:length(results.subsets)
 		results.subsets[i] = fn(d1.subsets[i],d2, args...; kwargs...)
 	end
 	return results
 end
 
-function apply(fn::Function, d1::Union{Data2D,Number}, d2::DataHR, args...; kwargs...)
-	results = DataHR{Data2D}(d2.sweeps) #Create empty results
+function apply(fn::Function, d1::Union{DataF1,Number}, d2::DataHR, args...; kwargs...)
+	results = DataHR{DataF1}(d2.sweeps) #Create empty results
 	for i in 1:length(results.subsets)
 		results.subsets[i] = fn(d1,d2.subsets[i], args...; kwargs...)
 	end
