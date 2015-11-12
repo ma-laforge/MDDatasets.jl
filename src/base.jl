@@ -102,7 +102,7 @@ type DataHR{T} <: DataMD
 	function DataHR{TA,N}(sweeps::Vector{PSweep}, a::Array{TA,N})
 		@assert(elemallowed(DataMD, T),
 			"Can only create DataHR{T} for T ∈ {Data2D, DataFloat, DataInt, DataComplex}")
-		@assert(length(sweeps)==N, "Number of sweeps must match dimensionality of subsets")
+		@assert(arraydims(sweeps)==N, "Number of sweeps must match dimensionality of subsets")
 		return new(sweeps, a)
 	end
 end
@@ -119,7 +119,8 @@ function call{T<:Number}(::Type{DataHR{Data2D}}, d::DataHR{T})
 	sweeps = d.sweeps[1:end-1]
 	x = d.sweeps[end].v
 	result = DataHR{Data2D}(sweeps) #Construct empty results
-	for coord in subscripts(result)
+	_sub = length(d.sweeps)>1?subscripts(result):[tuple()]
+	for coord in _sub
 		y = d.subsets[coord...,:]
 		result.subsets[coord...] = Data2D(x, reshape(y, length(y)))
 	end
@@ -160,11 +161,17 @@ end
 ===============================================================================#
 Base.names(list::Vector{PSweep}) = [s.id for s in list]
 
+#dimensionality of array
+arraydims(list::Vector{PSweep}) = max(1, length(list))
+
 #Compute the size of an array from a Vector{PSweep}:
 function arraysize(list::Vector{PSweep})
 	dims = Int[]
 	for s in list
 		push!(dims, length(s.v))
+	end
+	if 0 == length(dims) #Without sweeps, you can still have a single subset
+		push!(dims, 1)
 	end
 	return tuple(dims...)
 end
@@ -228,10 +235,14 @@ parameter(d::DataHR, id::AbstractString, idx::Int=0) =
 parameter(d::DataHR, id::AbstractString, coord::Tuple=0) =
 	parameter(d, dimension(d.sweeps, id), coord[dim])
 
+#Returns all parameters (not a single parameter) @ specified coordinate
+#TODO: rename?
 function parameter(d::DataHR, coord::Tuple=0)
 	result = []
-	for i in 1:length(coord)
-		push!(result, parameter(d, i, coord[i]))
+	if length(d.sweeps) > 0
+		for i in 1:length(coord)
+			push!(result, parameter(d, i, coord[i]))
+		end
 	end
 	return result
 end
