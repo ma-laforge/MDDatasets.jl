@@ -28,8 +28,17 @@ r2 = d1+d3
 
 @show r1
 @show r2
-
 @show length(d1), length(d2), length(d3), length(r1), length(r2)
+
+println("\nConverter tests:")
+@show dB10(2), dB20(2)
+@show dB(2,:W), dB(2,:VRMS), dB(2,:Vpk), dB(2,:Vratio)
+@show dBm(2,:W), dBm(2,:VRMS), dBm(2,:Vpk)
+@show Vpk(2,:W; R=50), Vpk(2,:VRMS)
+@show Ipk(2,:W; R=50), Ipk(2,:IRMS)
+@show VRMS(2,:W; R=50), VRMS(2,:Vpk)
+@show IRMS(2,:W; R=50), IRMS(2,:Ipk)
+
 
 
 :Test_Complete
