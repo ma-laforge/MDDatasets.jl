@@ -33,10 +33,9 @@ IRMS(P, ::DS{:W}; R=1) = sqrt(P/R)
 IRMS{T}(v, ::DS{T}, args...; kwargs...) = throw(nosupport(IRMS, [T], v, T, args...; kwargs...))
 IRMS(v, u::Symbol; kwargs...) = IRMS(v, DS(u); kwargs...)
 
-dB(P, ::DS{:W}) = dB10(P)
+dB(P, ::DS{:Wratio}) = dB10(P)
 dB(V, ::DS{:Vratio}) = dB20(V)
-dB(V, ::DS{:VRMS}; R=1) = dB10(abs2(V)/R)
-dB(V, ::DS{:Vpk}; R=1) = dB10(abs2(VRMS(V, :Vpk))/R)
+dB(I, ::DS{:Iratio}) = dB20(I)
 dB{T}(v, ::DS{T}, args...; kwargs...) = throw(nosupport(dB, [T], v, T, args...; kwargs...))
 dB(v, u::Symbol; kwargs...) = dB(v, DS(u); kwargs...)
 
@@ -45,5 +44,11 @@ dBm(V, ::DS{:VRMS}; R=1) = dB10(abs2(V)/R) - dB10(1e-3)
 dBm(V, ::DS{:Vpk}; R=1) = dB10(abs2(VRMS(V, :Vpk))/R) - dB10(1e-3)
 dBm{T}(v, ::DS{T}, args...; kwargs...) = throw(nosupport(dBm, [T], v, T, args...; kwargs...))
 dBm(v, u::Symbol; kwargs...) = dBm(v, DS(u); kwargs...)
+
+dBW(P, ::DS{:W}) = dB10(P) - dB10(1)
+dBW(V, ::DS{:VRMS}; R=1) = dB10(abs2(V)/R) - dB10(1)
+dBW(V, ::DS{:Vpk}; R=1) = dB10(abs2(VRMS(V, :Vpk))/R) - dB10(1)
+dBW{T}(v, ::DS{T}, args...; kwargs...) = throw(nosupport(dBW, [T], v, T, args...; kwargs...))
+dBW(v, u::Symbol; kwargs...) = dBW(v, DS(u); kwargs...)
 
 #Last line

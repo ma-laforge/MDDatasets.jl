@@ -52,7 +52,7 @@ export parameter #Get parameter sweep info regarding as DataHR subset
 
 #Circuit math:
 #-------------------------------------------------------------------------------
-export dB20, dB10, dB, dBm, Vpk, Ipk, VRMS, IRMS
+export dB20, dB10, dB, dBm, dBW, Vpk, Ipk, VRMS, IRMS
 
 #Vector operations:
 #-------------------------------------------------------------------------------
