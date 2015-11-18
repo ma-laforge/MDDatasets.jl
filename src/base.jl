@@ -60,12 +60,12 @@ end
 
 #Build a DataF1 object from a x-value range (make y=x):
 function DataF1(x::Range)
-	@assert(isincreasing(x), "Data must be ordered with increasing x")
+	assertincreasingx(x)
 	return DataF1(collect(x), collect(x))
 end
 
 function DataF1(x::Range, y::Function)
-	@assert(isincreasing(x), "Data must be ordered with increasing x")
+	assertincreasingx(x)
 	return DataF1(collect(x), y)
 end
 
@@ -139,6 +139,10 @@ end
 #WARNING: relatively expensive
 function assertincreasingx(d::DataF1)
 	@assert(isincreasing(d.x), "DataF1.x must be in increasing order.")
+end
+
+function assertincreasingx(x::Range)
+	@assert(isincreasing(x), "Data must be ordered with increasing x")
 end
 
 #Validate data lengths:
@@ -357,17 +361,18 @@ function apply{TX<:Number, TY1<:Number, TY2<:Number}(fn::Function, d1::DataF1{TX
 	end
 
 	i = 1; i1 = 1; i2 = 1
+	#NOTE: i ≜ index into result (x[]).  Low risk of being out of range.
 	_x12 = max(_x1, _x2) #First intersecting point
 	x[1] = min(_x1, _x2) #First point
 
 	while x[i] < _x2 #Only d1 has values (assume d2 is 0)
 		y[i] = fn(d1.y[i1], zero2)
-		i += 1; i1 += 1
+		i += 1; i1 += 1 #x[i] < _x2 and set not disjoint: safe to increment i1
 		x[i] = d1.x[i1]
 	end
 	while x[i] < _x1 #Only d2 has values (assume d1 is 0)
 		y[i] = fn(zero1, d2.y[i2])
-		i += 1; i2 += 1
+		i += 1; i2 += 1 #x[i] < _x1 and set not disjoint: safe to increment i2
 		x[i] = d2.x[i2]
 	end
 	x[i] = _x12
@@ -380,14 +385,14 @@ function apply{TX<:Number, TY1<:Number, TY2<:Number}(fn::Function, d1::DataF1{TX
 		local y1, y2
 		if p1next.x == x[i]
 			y1 = p1next.y
-			i1 += 1
+			i1 += 1 #x[i] < x12_: safe to increment i1
 			p1 = p1next; p1next = Point2D(d1, i1)
 		else
 			y1 = interpolate(p1, p1next, x=x[i])
 		end
 		if p2next.x == x[i]
 			y2 = p2next.y
-			i2 += 1
+			i2 += 1 #x[i] < x12_: safe to increment i2
 			p2 = p2next; p2next = Point2D(d2, i2)
 		else
 			y2 = interpolate(p2, p2next, x=x[i])

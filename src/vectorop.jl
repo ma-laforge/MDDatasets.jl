@@ -79,4 +79,16 @@ function shift{T<:Vector}(v::T, n::Int)
 	end
 end
 
+#Compute difference between two adjacent points:
+#TODO: optimize operations so they run faster
+function delta{T<:Vector}(v::T)
+	return v[2:end] .- v[1:end-1]
+end
+
+#Compute mean of two adjacent points:
+#TODO: optimize operations so they run faster
+function meanadj{T<:Vector}(v::T)
+	return (v[1:end-1] .+ v[2:end])./2
+end
+
 #Last line

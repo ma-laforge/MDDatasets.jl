@@ -26,6 +26,7 @@ include("functions.jl")
 include("vectorop.jl") #Some useful vector-only tools
 include("base.jl")
 include("datasetop.jl")
+include("datasetop_reg.jl")
 include("circuitmath.jl")
 include("show.jl")
 
@@ -50,14 +51,19 @@ export subscripts #Get subscripts to access each element in DataHR.
 export sweeps #Get the list of parameter sweeps in DataHR.
 export parameter #Get parameter sweep info regarding as DataHR subset
 
+#Basic dataset operations:
+#-------------------------------------------------------------------------------
+export xval #Gets a dataset with all the x-values as the y-values
+#value(ds, x=value) (already exported): get y-value @ given x.
+export sample #Samples a dataset
+export xshift, xscale
+export yvsx
+export deriv, integ, iinteg #derivative, definite integral, indefinite integral
+
+
 #Circuit math:
 #-------------------------------------------------------------------------------
 export dB20, dB10, dB, dBm, dBW, Vpk, Ipk, VRMS, IRMS
-
-#Vector operations:
-#-------------------------------------------------------------------------------
-export xval
-export shift
 
 end
 

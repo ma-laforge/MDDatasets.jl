@@ -1,4 +1,4 @@
-#MDDatasets: Dataset operations
+#MDDatasets: Register dataset operations
 #-------------------------------------------------------------------------------
 
 #==NOTE:
@@ -129,24 +129,18 @@ end; end #CODEGEN---------------------------------------------------------------
 #==Custom 1-argument functions of DataF1
 ===============================================================================#
 
-#Obtain a dataset of the x-values
-xval(d::DataF1) = DataF1(d.x, copy(d.x))
-
-#Shifts a dataset by +/-offset:
-function shift(d::DataF1, offset::Number)
-	return DataF1(d.x.+offset, copy(d.y))
-end
-shift(d::DataHR, offset::Number) = apply(d, offset)
-
 #1-argument functions that can be generically extended:
 const _custfn1 = [
-	:xval
+	:xval,
+	:deriv, :integ, :iinteg,
 ]
 
 #==Custom 2-argument functions of DataF1
 ===============================================================================#
 
 const _custfn2 = [
+	:yvsx
+	#:xshift, :xscale
 ]
 
 #==Register functions with DataHR
