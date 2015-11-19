@@ -322,7 +322,7 @@ function value(d::DataF1; x::Number=0)
 	y = 0
 	pos = 0
 	for i in 1:length(d)
-		if d.x >= x
+		if d.x[i] >= x
 			pos = i
 			break
 		end
