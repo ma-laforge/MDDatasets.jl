@@ -30,6 +30,19 @@ r2 = d1+d3
 @show r2
 @show length(d1), length(d2), length(d3), length(r1), length(r2)
 
+
+println("\nCross tests:")
+y = [0,0,0,0,1,-3,4,5,6,7,-10,-5,0,0,0,-5,-10,10,-3,1,-4,0,0,0,0,0,0]
+d10=DataF1(collect(1:length(y)), y)
+@show d10.y
+@show xcross(d10).y
+@show xcross1(d10, n=1)
+@show xcross(d10, .5).y
+@show xcross1(d10, .5, n=2)
+@show ycross(d10, .5).y
+@show ycross1(d10, .5, n=3)
+
+
 println("\nConverter tests:")
 @show dB10(2), dB20(2)
 @show dB(2,:Wratio), dB(2,:Vratio), dB(2,:Iratio)

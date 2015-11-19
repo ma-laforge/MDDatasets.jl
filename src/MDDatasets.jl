@@ -59,6 +59,7 @@ export sample #Samples a dataset
 export xshift, xscale
 export yvsx
 export deriv, integ, iinteg #derivative, definite integral, indefinite integral
+export xcross, xcross1, ycross, ycross1
 
 
 #Circuit math:
