@@ -35,6 +35,12 @@ immutable Point2D{TX<:Number, TY<:Number}
 	y::TY
 end
 
+#Allows one to specify limits of a 1D range
+immutable Limits1D{T<:Number}
+	min::T
+	max::T
+end
+
 
 #==Leaf data elements
 ===============================================================================#
@@ -317,20 +323,25 @@ end
 #    -Uses linear interpolation
 #    -Assumes value is zero when out of bounds
 #    -TODO: binary search
-function value(d::DataF1; x::Number=0)
+function value{TX<:Number, TY<:Number}(d::DataF1{TX, TY}; x::Number=0)
 	validate(d) #Expensive, but might avoid headaches
-	y = 0
+	nd = length(d) #Somewhat expensive
+	RT = promote_type(TX, TY) #For type stability
+	y = zero(RT) #Initialize
+
 	pos = 0
-	for i in 1:length(d)
-		if d.x[i] >= x
+	for i in 1:nd
+		if x <= d.x[i]
 			pos = i
 			break
 		end
 	end
+	#Here: pos=0, or x<=d.x[pos]
+
 	if pos > 1
 		y = interpolate(Point2D(d, pos-1), Point2D(d, pos), x=x)
-	elseif 1 == pos && x == d.x[1]
-		y = d.x[1]
+	elseif pos > 0 && x==d.x[1]
+		y = convert(RT, d.y[1])
 	end
 	return y
 end
