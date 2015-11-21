@@ -31,19 +31,42 @@ r2 = d1+d3
 @show length(d1), length(d2), length(d3), length(r1), length(r2)
 
 
-println("\nCross tests:")
+#For cross function testing, mostly
 y = [0,0,0,0,1,-3,4,5,6,7,-10,-5,0,0,0,-5,-10,10,-3,1,-4,0,0,0,0,0,0]
 d10=DataF1(collect(1:length(y)), y)
+
+println("\nTests cross functions:")
+xingsall = CrossType(:all)
+xingsrise = CrossType(:rise)
+xingsfall = CrossType(:fall)
+
 @show d10.y
+@show xcross(d10, allow=xingsall).y
 @show xcross(d10).y
+@show xcross(d10, allow=xingsrise).y
+@show xcross(d10, allow=xingsfall).y
 @show xcross1(d10, n=1)
 @show xcross(d10, .5).y
 @show xcross1(d10, .5, n=2)
+
+@show d10.y-.5
+@show ycross(d10, .5, allow=xingsall).x
+@show ycross(d10, .5, allow=xingsall).y
 @show ycross(d10, .5).y
+@show ycross(d10, .5, allow=xingsrise).y
+@show ycross(d10, .5, allow=xingsfall).y
+
 @show ycross1(d10, .5, n=3)
 
+#==
+println("\nTest value():")
+#Could be made into real test:
+for i in 1:length(d10.x)
+	@show d10.y[i], value(d10, x=i)
+end
+==#
 
-println("\nConverter tests:")
+println("\nTest unit conversion:")
 @show dB10(2), dB20(2)
 @show dB(2,:Wratio), dB(2,:Vratio), dB(2,:Iratio)
 @show dBm(2,:W), dBm(2,:VRMS), dBm(2,:Vpk)
