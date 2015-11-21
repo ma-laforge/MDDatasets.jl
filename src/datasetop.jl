@@ -160,6 +160,8 @@ function CrossType(id::Symbol)
 		return CrossType(rise=true, fall=false)
 	elseif :fall == id
 		return CrossType(rise=false, fall=true)
+	elseif :risefall == id
+		return CrossType(rise=true, fall=true)
 	else
 		throw("Unknown crossing-type preset: $id")
 	end
@@ -301,9 +303,10 @@ function xcross(d::DataF1, nmax::Integer=0; tstart::Real=0,
 	x = xveccross(d, nmax, tstart, allow)
 	return DataF1(x, x)
 end
-xcross(d1::DataF1, d2, nmax::Integer=0; tstart::Real=0,
-	allow::CrossType=CrossType()) =
-	xcross(d1-d2, nmax, tstart=tstart, allow=allow)
+function ycross(::DS{:event}, args...; kwargs...)
+	d = ycross(args...;kwargs...)
+	return DataF1(collect(1:length(d.x)), d.y)
+end
 
 #xcross1: return a single crossing point (new name for type stability)
 #-------------------------------------------------------------------------------
@@ -317,9 +320,6 @@ function xcross1(d::DataF1; n::Integer=1, tstart::Real=0,
 		return x[n]
 	end
 end
-xcross1(d1::DataF1, d2; n::Integer=1, tstart::Real=0,
-	allow::CrossType=CrossType()) =
-	xcross1(d1-d2, n=n, tstart=tstart, allow=allow)
 
 #TODO: Make more efficient (don't use "value")
 #-------------------------------------------------------------------------------
@@ -332,6 +332,10 @@ function ycross{TX<:Number, TY<:Number}(d1::DataF1{TX,TY}, d2, nmax::Integer=0;
 		y[i] = value(d1, x=x[i])
 	end
 	return DataF1(x, y)
+end
+function ycross(::DS{:event}, args...; kwargs...)
+	d = ycross(args...;kwargs...)
+	return DataF1(collect(1:length(d.x)), d.y)
 end
 
 #ycross1: return a single crossing point (new name for type stability)
@@ -348,5 +352,22 @@ function ycross1{TX<:Number, TY<:Number}(d1::DataF1{TX,TY}, d2; n::Integer=1,
 	end
 end
 
+#measdelay: Measure delay between crossing events of two signals:
+#-------------------------------------------------------------------------------
+function measdelay(dref, dmain, nmax::Integer=0;
+	tstart_ref::Real=0, tstart_main::Real=0,
+	xing1::CrossType=CrossType(), xing2::CrossType=CrossType())
+
+	xref = xcross(dref, nmax, tstart=tstart_ref, allow=xing1)
+	xmain = xcross(dmain, nmax, tstart=tstart_main, allow=xing2)
+	npts = min(length(xref), length(xmain))
+	delay = xmain.y[1:npts] - xref.y[1:npts]
+	x = xref.x[1:npts]
+	return DataF1(x, delay)
+end
+function measdelay(::DS{:event}, args...; kwargs...)
+	d = eventdelay(args...;kwargs...)
+	return DataF1(collect(1:length(d.x)), d.y)
+end
 
 #Last line

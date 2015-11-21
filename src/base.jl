@@ -11,6 +11,9 @@ abstract LeafDS <: DataMD #Leaf dataset
 #==Helper types (TODO: move to somewhere else?)
 ===============================================================================#
 
+#For type stability.  Identifies result as having event count in x-axis
+const Event = DS{:event}()
+
 #Parameter sweep
 type PSweep{T}
 	id::ASCIIString #TODO: Support UTF8?? - concrete type simplifies writing to HDF5

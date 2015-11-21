@@ -46,8 +46,8 @@ xingsfall = CrossType(:fall)
 @show xcross(d10, allow=xingsrise).y
 @show xcross(d10, allow=xingsfall).y
 @show xcross1(d10, n=1)
-@show xcross(d10, .5).y
-@show xcross1(d10, .5, n=2)
+@show xcross(d10-.5).y
+@show xcross1(d10-.5, n=2)
 
 @show d10.y-.5
 @show ycross(d10, .5, allow=xingsall).x

@@ -59,8 +59,41 @@ export sample #Samples a dataset
 export xshift, xscale
 export yvsx
 export deriv, integ, iinteg #derivative, definite integral, indefinite integral
-export xcross, xcross1, ycross, ycross1
+
+
+#Cross operations:
+#-------------------------------------------------------------------------------
+#==API
+NOTE: using "{Event}" for type stability (I hope)
+
+Returns x-values of d1 (up-to nmax) when d1 crosses 0 (nmax=0: get all crossings):
+xcross(d1, nmax; tstart, allow::CrossType)
+xcross(Event, d1, nmax; tstart, allow::CrossType)
+
+Returns y-values of d2 (up-to nmax) when when d1 crosses d2 (nmax=0: get all crossings):
+ycross(d1, d2, nmax; tstart, allow::CrossType)
+ycross(Event, d1, d2, nmax; tstart, allow::CrossType)
+
+Returns scalar x-value of d1 on n-th zero-crossing:
+xcross1(d1; n, tstart, allow::CrossType)
+xcross1(Event, d1; n, tstart, allow::CrossType)
+
+Returns scalar y-value of d1 on n-th crossing of d1 & d2:
+ycross1(d1, d2; n, tstart, allow::CrossType)
+ycross1(Event, d1, d2; n, tstart, allow::CrossType)
+
+Resultant x-values are x-values of d1 @ crossings:
+(x/y)cross
+
+Resultant x-values corresponds to number of current crossing event (1, 2, ..., n):
+(x/y)cross{Event}
+==#
+export xcross, xcross1 #Measure x @ crossing events
+export ycross, ycross1 #Measure y @ crossing events
+export measdelay #Measure delay between crossing events of two signals
 export CrossType #To filter out unwanted crossings
+export Event #Identifies result as having event count in x-axis
+
 
 
 #Circuit math:
