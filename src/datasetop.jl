@@ -60,14 +60,61 @@ function integ(d::DataF1)
 	return sum(area)
 end
 
-
-#==Sampling algorithm
+#==Clip
 ===============================================================================#
 
 #-------------------------------------------------------------------------------
-function sampledisjoint(d::DataF1, x::Range)
-	@assert(false, "Currently no support for disjoint sampling")
+function clip{TX<:Number, TY<:Number}(d::DataF1{TX,TY}, rng::Limits1D{TX})
+	validate(d); #Expensive, but might avoid headaches
+	assertnotinverted(rng)
+	if length(d) < 1; return d; end;
+
+	xmin = clamp(d.x[1], rng)
+	xmax = clamp(d.x[end], rng)
+	dx = d.x
+	x = Vector{TX}(length(dx))
+
+	id=1
+	while dx[id]<xmin
+		id+=1
+	end
+	#Here: dx[id]>=xmin
+	i=1
+	x[i] = xmin
+	if dx[id]>xmin; i+=1; end
+	istart = i
+	dyoffset = id-i
+	while dx[id]<xmax
+		x[i] = dx[id]
+		id+=1
+		i+=1
+	end
+	if !(xmax==xmin) #not already @ max position
+		x[i] = xmax
+	end
+
+	resize!(x, i)
+
+	#Copy y-values:
+	TYR = typeof(one(promote_type(TX,TY))/2) #TODO: is there better way?
+	y = Vector{TYR}(length(x))
+	for i in istart:(length(x)-1)
+		y[i] = d.y[dyoffset+i]
+	end
+	#TODO: don't use value().  Interpolate in place instead:
+	y[1] = value(d, x=x[1])
+	y[end] = value(d, x=x[end])
+
+	return DataF1(x, y)
 end
+clip{TX<:Number, TY<:Number}(d::DataF1{TX,TY}; xmin=nothing, xmax=nothing) =
+	clip(d, Limits1D{TX}(xmin, xmax))
+clip{TX<:Number, TY<:Number}(d::DataF1{TX,TY}, rng::Range) =
+	clip(d, Limits1D{TX}(rng))
+
+
+#==Sampling algorithm
+===============================================================================#
 
 #-------------------------------------------------------------------------------
 function sample{TX<:Number, TY<:Number}(d::DataF1{TX,TY}, x::Range)
@@ -85,8 +132,9 @@ function sample{TX<:Number, TY<:Number}(d::DataF1{TX,TY}, x::Range)
 	_xint = max(_dx, _x) #First intersecting point
 	xint_ = min(dx_, x_) #Last intersecting point
 
+	#Disjoint dataset:
 	if _x > dx_ || _dx > x_
-		return applydisjoint(fn, d1, d2)
+		return DataF1(collect(x), zeros(eltype(d.y),length(x)))
 	end
 
 	i = 1 #index into x/y arrays
@@ -169,7 +217,6 @@ end
 
 #Finds all zero crossing indices in a dataset, up to nmax.
 #nmax = 0: find all crossings
-#TODO: support xstart
 #-------------------------------------------------------------------------------
 function icross(d::DataF1, nmax::Integer, xstart::Real, allow::CrossType)
 	#TODO: make into function if can force inline
@@ -298,13 +345,13 @@ function xveccross{TX<:Number, TY<:Number}(d::DataF1{TX,TY}, nmax::Integer,
 end
 
 #-------------------------------------------------------------------------------
-function xcross(d::DataF1, nmax::Integer=0; tstart::Real=0,
+function xcross(d::DataF1; nmax::Integer=0, tstart::Real=0,
 	allow::CrossType=CrossType())
 	x = xveccross(d, nmax, tstart, allow)
 	return DataF1(x, x)
 end
-function ycross(::DS{:event}, args...; kwargs...)
-	d = ycross(args...;kwargs...)
+function xcross(::DS{:event}, args...; kwargs...)
+	d = xcross(args...;kwargs...)
 	return DataF1(collect(1:length(d.x)), d.y)
 end
 
@@ -323,7 +370,7 @@ end
 
 #TODO: Make more efficient (don't use "value")
 #-------------------------------------------------------------------------------
-function ycross{TX<:Number, TY<:Number}(d1::DataF1{TX,TY}, d2, nmax::Integer=0;
+function ycross{TX<:Number, TY<:Number}(d1::DataF1{TX,TY}, d2; nmax::Integer=0,
 	tstart::Real=0, allow::CrossType=CrossType())
 	x = xveccross(d1-d2, nmax, tstart, allow)
 	TR = typeof(one(promote_type(TX,TY))/2) #TODO: is there better way?
@@ -352,22 +399,43 @@ function ycross1{TX<:Number, TY<:Number}(d1::DataF1{TX,TY}, d2; n::Integer=1,
 	end
 end
 
+#==Crossing-based functions
+===============================================================================#
+
 #measdelay: Measure delay between crossing events of two signals:
 #-------------------------------------------------------------------------------
-function measdelay(dref, dmain, nmax::Integer=0;
+function measdelay(dref::DataF1, dmain::DataF1; nmax::Integer=0,
 	tstart_ref::Real=0, tstart_main::Real=0,
 	xing1::CrossType=CrossType(), xing2::CrossType=CrossType())
 
-	xref = xcross(dref, nmax, tstart=tstart_ref, allow=xing1)
-	xmain = xcross(dmain, nmax, tstart=tstart_main, allow=xing2)
+	xref = xcross(dref, nmax=nmax, tstart=tstart_ref, allow=xing1)
+	xmain = xcross(dmain, nmax=nmax, tstart=tstart_main, allow=xing2)
 	npts = min(length(xref), length(xmain))
 	delay = xmain.y[1:npts] - xref.y[1:npts]
 	x = xref.x[1:npts]
 	return DataF1(x, delay)
 end
 function measdelay(::DS{:event}, args...; kwargs...)
-	d = eventdelay(args...;kwargs...)
+	d = measdelay(args...;kwargs...)
 	return DataF1(collect(1:length(d.x)), d.y)
+end
+
+#measperiod: Measure period between successive zero-crossings:
+#-------------------------------------------------------------------------------
+function measperiod(d::DataF1; nmax::Integer=0, tstart::Real=0,
+	xing::CrossType=CrossType(), shiftx=true)
+
+	dx = xcross(d, nmax=nmax, tstart=tstart, allow=xing)
+	return deltax(dx, shiftx=shiftx)
+end
+
+#measfreq: Measure 1/period between successive zero-crossings:
+#-------------------------------------------------------------------------------
+function measfreq(d::DataF1; nmax::Integer=0, tstart::Real=0,
+	xing::CrossType=CrossType(), shiftx=true)
+
+	T = measperiod(d, nmax=nmax, tstart=tstart, xing=xing, shiftx=shiftx)
+	return DataF1(T.x, 1./T.y)
 end
 
 #Last line

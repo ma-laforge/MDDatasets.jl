@@ -28,6 +28,7 @@ include("base.jl")
 include("datasetop.jl")
 include("datasetop_reg.jl")
 include("circuitmath.jl")
+include("measinterface.jl")
 include("show.jl")
 
 #==TODO: Watch out for value() being exported by multiple modules...
@@ -55,6 +56,7 @@ export parameter #Get parameter sweep info regarding as DataHR subset
 #-------------------------------------------------------------------------------
 export xval #Gets a dataset with all the x-values as the y-values
 #value(ds, x=value) (already exported): get y-value @ given x.
+export clip #clips a dataset within an xrange
 export sample #Samples a dataset
 export xshift, xscale
 export yvsx
@@ -88,12 +90,19 @@ Resultant x-values are x-values of d1 @ crossings:
 Resultant x-values corresponds to number of current crossing event (1, 2, ..., n):
 (x/y)cross{Event}
 ==#
+export Event #Identifies result as having event count in x-axis
+export CrossType #To filter out unwanted crossings
 export xcross, xcross1 #Measure x @ crossing events
 export ycross, ycross1 #Measure y @ crossing events
 export measdelay #Measure delay between crossing events of two signals
-export CrossType #To filter out unwanted crossings
-export Event #Identifies result as having event count in x-axis
+export measperiod, measfreq
 
+export meas #Use meas(:MEASTYPE, ...) to minimize namespace pollution.
+#==Sample usage:
+TODO: Deprecate direct call of x/ycross/1 & measdelay
+ON CONDITION: Only if this interface does not mess up type stability.
+meas(:xcross, Event, d1)
+==#
 
 
 #Circuit math:
