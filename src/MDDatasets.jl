@@ -26,6 +26,7 @@ include("functions.jl")
 include("vectorop.jl") #Some useful vector-only tools
 include("base.jl")
 include("datasetop.jl")
+include("broadcast.jl")
 include("datasetop_reg.jl")
 include("circuitmath.jl")
 include("measinterface.jl")

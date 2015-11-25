@@ -350,8 +350,8 @@ function xcross(d::DataF1; nmax::Integer=0, tstart::Real=0,
 	x = xveccross(d, nmax, tstart, allow)
 	return DataF1(x, x)
 end
-function xcross(::DS{:event}, args...; kwargs...)
-	d = xcross(args...;kwargs...)
+function xcross(::DS{:event}, d::DataF1, args...; kwargs...)
+	d = xcross(d, args...;kwargs...)
 	return DataF1(collect(1:length(d.x)), d.y)
 end
 
@@ -370,7 +370,8 @@ end
 
 #TODO: Make more efficient (don't use "value")
 #-------------------------------------------------------------------------------
-function ycross{TX<:Number, TY<:Number}(d1::DataF1{TX,TY}, d2; nmax::Integer=0,
+function ycross{TX<:Number, TY<:Number, T<:Union{DataF1, Number}}(
+	d1::DataF1{TX,TY}, d2::T; nmax::Integer=0,
 	tstart::Real=0, allow::CrossType=CrossType())
 	x = xveccross(d1-d2, nmax, tstart, allow)
 	TR = typeof(one(promote_type(TX,TY))/2) #TODO: is there better way?
@@ -380,14 +381,15 @@ function ycross{TX<:Number, TY<:Number}(d1::DataF1{TX,TY}, d2; nmax::Integer=0,
 	end
 	return DataF1(x, y)
 end
-function ycross(::DS{:event}, args...; kwargs...)
+function ycross{T<:Union{DataF1, Number}}(::DS{:event}, d1::DataF1, d2::T, args...; kwargs...)
 	d = ycross(args...;kwargs...)
 	return DataF1(collect(1:length(d.x)), d.y)
 end
 
 #ycross1: return a single crossing point (new name for type stability)
 #-------------------------------------------------------------------------------
-function ycross1{TX<:Number, TY<:Number}(d1::DataF1{TX,TY}, d2; n::Integer=1,
+function ycross1{TX<:Number, TY<:Number, T<:Union{DataF1, Number}}(
+	d1::DataF1{TX,TY}, d2::T; n::Integer=1,
 	tstart::Real=0, allow::CrossType=CrossType())
 	n = max(n, 1)
 	x = xveccross(d1-d2, n, tstart, allow)
@@ -415,8 +417,8 @@ function measdelay(dref::DataF1, dmain::DataF1; nmax::Integer=0,
 	x = xref.x[1:npts]
 	return DataF1(x, delay)
 end
-function measdelay(::DS{:event}, args...; kwargs...)
-	d = measdelay(args...;kwargs...)
+function measdelay(::DS{:event}, dref::DataF1, dmain::DataF1, args...; kwargs...)
+	d = measdelay(dref, dmain, args...;kwargs...)
 	return DataF1(collect(1:length(d.x)), d.y)
 end
 

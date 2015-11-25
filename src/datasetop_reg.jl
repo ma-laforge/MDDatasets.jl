@@ -30,13 +30,13 @@ Base.$op(d::DataF1, n::Number) = DataF1(d.x, $(_dotop(op))(d.y, n))
 Base.$op(n::Number, d::DataF1) = DataF1(d.x, $(_dotop(op))(n, d.y))
 
 #DataHR op DataHR:
-Base.$op(d1::DataHR, d2::DataHR) = apply(Base.$op, d1, d2)
+Base.$op{T1,T2}(d1::DataHR{T1}, d2::DataHR{T2}) = broadcast2(promote_type(T1,T2), Base.$op, d1, d2)
 
 #DataHR op DataF1/Number:
-Base.$op(d1::DataHR, d2::Union{DataF1,Number}) = apply(Base.$op, d1, d2)
+Base.$op{T1,T2<:Union{DataF1,Number}}(d1::DataHR{T1}, d2::T2) = broadcast2(promote_type(T1,T2), Base.$op, d1, d2)
 
 #DataF1/Number op DataHR:
-Base.$op(d1::Union{DataF1,Number}, d2::DataHR) = apply(Base.$op, d1, d2)
+Base.$op{T1<:Union{DataF1,Number},T2}(d1::T1, d2::DataHR{T2}) = broadcast2(promote_type(T1,T2), Base.$op, d1, d2)
 
 
 end; end #CODEGEN---------------------------------------------------------------
@@ -131,17 +131,25 @@ end; end #CODEGEN---------------------------------------------------------------
 
 #1-argument functions that can be generically extended:
 const _custfn1 = [
-	:xval,
+	:clip, :xval, :sample,
+	:xshift, :xscale,
 	:deriv, :integ, :iinteg,
+	:xcross, :measperiod, :measfreq,
 ]
 
 #==Custom 2-argument functions of DataF1
 ===============================================================================#
-
+#NOTE: :ycross is special.
 const _custfn2 = [
-	:yvsx
-	#:xshift, :xscale
+	:yvsx,
+	:measdelay,
 ]
+
+#Custom 2-argument functions of DataF1 with ::DS{} as first argument
+const _custfn2DS = [
+	:measdelay,
+]
+
 
 #==Register functions with DataHR
 ===============================================================================#
@@ -151,7 +159,7 @@ for fn in vcat(_basefn1, _custfn1); @eval begin #CODEGEN------------------------
 
 
 #fn(DataHR)
-$fn(d::DataHR) = apply($fn, d)
+$fn{T}(d::DataHR{T}, args...; kwargs...) = broadcast1(T, $fn, d, args...; kwargs...)
 
 end; end #CODEGEN---------------------------------------------------------------
 
@@ -159,22 +167,43 @@ end; end #CODEGEN---------------------------------------------------------------
 for fn in vcat(_basefn2, _custfn2); @eval begin #CODEGEN------------------------
 
 #fn(DataHR, DataHR):
-$fn(d1::DataHR, d2::DataHR) = apply($fn, d1, d2)
+$fn{T1, T2}(d1::DataHR{T1}, d2::DataHR{T2}, args...; kwargs...) =
+	broadcast2(promote_type(T1,T2), $fn, d1, d2, args...; kwargs...)
 
 #fn(DataHR, DataF1/Number):
-$fn(d1::DataHR, d2::Union{DataF1,Number}) = apply($fn, d1, d2)
+$fn{T1,T2<:Union{DataF1,Number}}(d1::DataHR{T1}, d2::T2, args...; kwargs...) =
+	broadcast2(promote_type(T1,T2), $fn, d1, d2, args...; kwargs...)
 
 #fn(DataF1/Number, DataHR):
-$fn(d1::Union{DataF1,Number}, d2::DataHR) = apply($fn, d1, d2)
+$fn{T1<:Union{DataF1,Number},T2}(d1::T1, d2::DataHR{T2}, args...; kwargs...) =
+	broadcast2(promote_type(T1,T2), $fn, d1, d2, args...; kwargs...)
 
 end; end #CODEGEN---------------------------------------------------------------
+
+#2-argument functions with ::DS{} as first argument
+for fn in vcat(_custfn2DS); @eval begin #CODEGEN------------------------
+
+#fn(DataHR, DataHR):
+$fn{T1, T2}(ds::DS, d1::DataHR{T1}, d2::DataHR{T2}, args...; kwargs...) =
+	broadcast2(promote_type(T1,T2), $fn, ds, d1, d2, args...; kwargs...)
+
+#fn(DataHR, DataF1/Number):
+$fn{T1,T2<:Union{DataF1,Number}}(ds::DS, d1::DataHR{T1}, d2::T2, args...; kwargs...) =
+	broadcast2(promote_type(T1,T2), $fn, ds, d1, d2, args...; kwargs...)
+
+#fn(DataF1/Number, DataHR):
+$fn{T1<:Union{DataF1,Number},T2}(ds::DS, d1::T1, d2::DataHR{T2}, args...; kwargs...) =
+	broadcast2(promote_type(T1,T2), $fn, ds, d1, d2, args...; kwargs...)
+
+end; end #CODEGEN---------------------------------------------------------------
+
 
 #1-argument reducing/collpasing functions:
 #NOTE: Only work on non-scalar values
 for fn in vcat(_baseredfn1, []); @eval begin #CODEGEN---------------------------
 
 #fn(DataHR)
-$fn(d::DataHR{DataF1}) = applyreduce($fn, d)
+$fn(d::DataHR{DataF1}, args...; kwargs...) = broadcast1(Number, $fn, d, args...; kwargs...)
 
 end; end #CODEGEN---------------------------------------------------------------
 #Last line

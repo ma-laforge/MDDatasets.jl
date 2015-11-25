@@ -9,9 +9,28 @@ println("\nTest constructors:")
 @show d1 = DataF1([1,2,3], [4,5,6])
 sweeplist = PSweep[
 	PSweep("v1", [1,2])
-	PSweep("v2", [1,2])
+	PSweep("v2", [4,5])
+]
+sweeplist2 = PSweep[
+	PSweep("v1", [1,2])
+	PSweep("v4", [4,5])
+]
+sweeplist3 = PSweep[
+	PSweep("v1", [1,2])
+	PSweep("v2", [3,4])
 ]
 @show dhr = DataHR(sweeplist,DataF1[d1 d1; d1 d1])
+dhr2 = DataHR(sweeplist2,DataF1[d1 d1; d1 d1])
+dhr3 = DataHR(sweeplist3,DataF1[d1 d1; d1 d1])
+
+println("\nTest broadcast operations on DataHR:")
+dhr+dhr
+try dhr+dhr2
+catch e; println(e.msg)
+end
+try dhr+dhr3
+catch e; println(e.msg)
+end
 
 println("\nTest basic operations on DataF1:")
 d1 = DataF1(1:10.0)

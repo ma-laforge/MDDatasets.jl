@@ -149,6 +149,13 @@ function call{T<:Number}(::Type{DataHR{DataF1}}, d::DataHR{T})
 	return result
 end
 
+#==Type promotions
+===============================================================================#
+Base.promote_rule{T1<:DataF1, T2<:Number}(::Type{T1}, ::Type{T2}) = DataF1
+Base.promote_rule{T1<:DataHR, T2<:Number}(::Type{T1}, ::Type{T2}) = DataHR
+Base.promote_rule{TX1,TX2,TY1,TY2}(::Type{DataF1{TX1,TY1}},::Type{DataF1{TX2,TY2}}) =
+	DataF1{promote_type(TX1,TX2),promote_type(TY1,TY2)}
+
 
 #==Useful assertions
 ===============================================================================#
@@ -462,58 +469,6 @@ function apply{TX<:Number, TY1<:Number, TY2<:Number}(fn::Function, d1::DataF1{TX
 	npts = i
 
 	return DataF1(resize!(x, npts), resize!(y, npts))
-end
-
-Base.promote_type{TX1,TX2,TY1,TY2}(::Type{DataF1{TX1,TY1}},::Type{DataF1{TX2,TY2}}) =
-	DataF1{promote_type(TX1,TX2),promote_type(TY1,TY2)}
-
-
-#==Apply fn(d); d ∈ DataHR
-===============================================================================#
-function apply(fn::Function, d::DataHR)
-	results = DataHR{DataF1}(d.sweeps) #Create empty results
-	for i in 1:length(results.subsets)
-		results.subsets[i] = fn(d.subsets[i])
-	end
-	return results
-end
-
-#Functions that reduce:
-function applyreduce(fn::Function, d::DataHR{DataF1})
-	resulttype = promote_type(findytypes(d.subsets)...)
-	results = DataHR{resulttype}(d.sweeps) #Create empty results
-	for i in 1:length(results.subsets)
-		results.subsets[i] = fn(d.subsets[i])
-	end
-	return results
-end
-
-
-#==Apply fn(d1,d2); where one of {d1,d2} ∈ DataHR
-===============================================================================#
-function apply(fn::Function, d1::DataHR, d2::DataHR, args...; kwargs...)
-	@assert(d1.sweeps == d2.sweeps, "DataHR sweeps do not match")
-	results = DataHR{DataF1}(d1.sweeps) #Create empty results
-	for i in 1:length(results.subsets)
-		results.subsets[i] = fn(d1.subsets[i], d2.subsets[i], args...; kwargs...)
-	end
-	return results
-end
-
-function apply(fn::Function, d1::DataHR, d2::Union{DataF1,Number}, args...; kwargs...)
-	results = DataHR{DataF1}(d1.sweeps) #Create empty results
-	for i in 1:length(results.subsets)
-		results.subsets[i] = fn(d1.subsets[i],d2, args...; kwargs...)
-	end
-	return results
-end
-
-function apply(fn::Function, d1::Union{DataF1,Number}, d2::DataHR, args...; kwargs...)
-	results = DataHR{DataF1}(d2.sweeps) #Create empty results
-	for i in 1:length(results.subsets)
-		results.subsets[i] = fn(d1,d2.subsets[i], args...; kwargs...)
-	end
-	return results
 end
 
 #Last line
