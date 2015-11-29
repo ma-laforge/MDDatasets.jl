@@ -44,6 +44,7 @@ end
 basesweep(s::Vector{PSweep}, d::DataHR) = basesweep(s,d.sweeps)
 basesweep(s::Vector{PSweep}, d::DataF1) = s
 basesweep(s::Vector{PSweep}, d::Number) = s
+basesweep{T<:Number}(s::Vector{PSweep}, v::Vector{T}) = s
 basesweep(d1::DataHR, d2::DataHR) = basesweep(d1.sweeps,d2.sweeps)
 basesweep(d1::DataHR, d2) = basesweep(d1.sweeps,d2)
 basesweep(d1, d2::DataHR) = basesweep(d2.sweeps,d2)
