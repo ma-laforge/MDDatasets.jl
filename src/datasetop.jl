@@ -21,7 +21,6 @@ xval(d::DataF1) = DataF1(d.x, copy(d.x))
 function xshift(d::DataF1, offset::Number)
 	return DataF1(d.x.+offset, copy(d.y))
 end
-#xshift(d::DataHR, offset::Number) = apply(d, offset)
 
 #Scales x-values of a dataset by fact:
 #-------------------------------------------------------------------------------
