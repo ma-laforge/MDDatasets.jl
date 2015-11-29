@@ -4,6 +4,14 @@
 #TODO: add xaty?
 #-------------------------------------------------------------------------------
 
+
+#==Data accessors
+===============================================================================#
+
+#Obtain a dataset of the x-values
+#-------------------------------------------------------------------------------
+xval(d::DataF1) = DataF1(d.x, copy(d.x))
+
 #Element-by-element difference of y-values:
 #(shift x-values @ mean position)
 #-------------------------------------------------------------------------------
@@ -12,9 +20,21 @@ function deltax(d::DataF1; shiftx=true)
 	return DataF1(x, delta(d.y))
 end
 
-#Obtain a dataset of the x-values
-#-------------------------------------------------------------------------------
-xval(d::DataF1) = DataF1(d.x, copy(d.x))
+function values(sweeplist::Vector{PSweep}, idx::Number)
+	sw = sweeplist[idx].v #Sweep of interest
+	T = eltype(sw)
+	result = DataHR{T}(sweeplist)
+	for coord in subscripts(result)
+		result.subsets[coord...] = sw[coord[idx]]
+	end
+	return result
+end
+values(sweeplist::Vector{PSweep}, id::AbstractString) =
+	values(sweeplist, dimension(sweeplist, id))
+
+
+#==X-value modifiers
+===============================================================================#
 
 #Shifts x-values of a dataset by +/-offset:
 #-------------------------------------------------------------------------------
@@ -35,6 +55,10 @@ function yvsx(y::DataF1, x::DataF1)
 	@assert(_x.x==_y.x, "xvsy algorithm error: not generating unique x-vector.")
 	return DataF1(_x.y, _y.y)
 end
+
+
+#==Differential/integral math
+===============================================================================#
 
 #-------------------------------------------------------------------------------
 function deriv(d::DataF1; shiftx=true)

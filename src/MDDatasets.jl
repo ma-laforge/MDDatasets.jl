@@ -2,6 +2,8 @@
 #-------------------------------------------------------------------------------
 module MDDatasets
 
+import Base: values
+
 #==Suggested scalar data types
 	-Use concrete types of the largest size natively supported by processor
    -Eventually should move to 128-bit values, etc.==#
