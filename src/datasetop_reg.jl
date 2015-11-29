@@ -137,12 +137,23 @@ const _custfn1 = [
 	:xcross, :measperiod, :measfreq,
 ]
 
+#Data reducing:
+const _custredfn1 = [
+	:xcross1,
+]
+
+
 #==Custom 2-argument functions of DataF1
 ===============================================================================#
-#NOTE: :ycross is special.
 const _custfn2 = [
 	:yvsx,
 	:measdelay,
+	:ycross,
+]
+
+#Data reducing:
+const _custredfn2 = [
+	:ycross1,
 ]
 
 #Custom 2-argument functions of DataF1 with ::DS{} as first argument
@@ -180,6 +191,7 @@ $fn{T1<:Union{DataF1,Number},T2}(d1::T1, d2::DataHR{T2}, args...; kwargs...) =
 
 end; end #CODEGEN---------------------------------------------------------------
 
+
 #2-argument functions with ::DS{} as first argument
 for fn in vcat(_custfn2DS); @eval begin #CODEGEN------------------------
 
@@ -198,9 +210,17 @@ $fn{T1<:Union{DataF1,Number},T2}(ds::DS, d1::T1, d2::DataHR{T2}, args...; kwargs
 end; end #CODEGEN---------------------------------------------------------------
 
 
+#2-argument reducing/collpasing functions:
+for fn in vcat(_custredfn2); @eval begin #CODEGEN------------------------
+
+$fn(d1, d2, args...; kwargs...) =
+	broadcast2(Number, $fn, d1, d2, args...; kwargs...)
+
+end; end #CODEGEN---------------------------------------------------------------
+
+
 #1-argument reducing/collpasing functions:
-#NOTE: Only work on non-scalar values
-for fn in vcat(_baseredfn1, []); @eval begin #CODEGEN---------------------------
+for fn in vcat(_baseredfn1, _custredfn1); @eval begin #CODEGEN---------------------------
 
 #fn(DataHR)
 $fn(d::DataHR{DataF1}, args...; kwargs...) = broadcast1(Number, $fn, d, args...; kwargs...)
