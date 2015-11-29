@@ -228,6 +228,7 @@ end
 function dimension(list::Vector{PSweep}, id::AbstractString)
 	dim = findfirst((s)->(id==s.id), list)
 	@assert(dim>0, "Sweep not found: $id.")
+	return dim
 end
 
 #Return a list of indicies corresponding to desired sweep values:
@@ -237,6 +238,15 @@ function indices(sweep::PSweep, vlist)
 		push!(result, findclosestindex(sweep.v, v))
 	end
 	return result
+end
+
+#Returns the subscripts for the DataHR subsets corresponding to list.
+#TODO: rename arraysubscripts?
+#TODO: test me
+function subscripts(list::Vector{PSweep})
+	dim = arraysize(list)
+	len = prod(dim)
+	return [ind2sub(dim,i) for i in 1:len]
 end
 
 
@@ -276,11 +286,11 @@ sweeps(d::DataHR) = d.sweeps
 
 #Obtain parameter info
 #-------------------------------------------------------------------------------
-parameter(d::DataHR, dim::Int, idx::Int=0) = d.sweeps[dim].v[idx]
-parameter(d::DataHR, dim::Int, coord::Tuple=0) = parameter(d, dim, coord[dim])
-parameter(d::DataHR, id::AbstractString, idx::Int=0) =
+parameter(d::DataHR, dim::Int, idx::Int) = d.sweeps[dim].v[idx]
+parameter(d::DataHR, dim::Int, coord::Tuple) = parameter(d, dim, coord[dim])
+parameter(d::DataHR, id::AbstractString, idx::Int) =
 	parameter(d, dimension(d.sweeps, id), idx)
-parameter(d::DataHR, id::AbstractString, coord::Tuple=0) =
+parameter(d::DataHR, id::AbstractString, coord::Tuple) =
 	parameter(d, dimension(d.sweeps, id), coord[dim])
 
 #Returns all parameters (not a single parameter) @ specified coordinate
