@@ -368,7 +368,7 @@ function xveccross{TX<:Number, TY<:Number}(d::DataF1{TX,TY}, nmax::Integer,
 end
 
 #-------------------------------------------------------------------------------
-function xcross(d::DataF1; nmax::Integer=0, tstart::Real=0,
+function xcross(d::DataF1; nmax::Integer=0, tstart::Real=-Inf,
 	allow::CrossType=CrossType())
 	x = xveccross(d, nmax, tstart, allow)
 	return DataF1(x, x)
@@ -380,7 +380,7 @@ end
 
 #xcross1: return a single crossing point (new name for type stability)
 #-------------------------------------------------------------------------------
-function xcross1(d::DataF1; n::Integer=1, tstart::Real=0,
+function xcross1(d::DataF1; n::Integer=1, tstart::Real=-Inf,
 	allow::CrossType=CrossType())
 	n = max(n, 1)
 	x = xveccross(d, n, tstart, allow)
@@ -395,7 +395,7 @@ end
 #-------------------------------------------------------------------------------
 function ycross{TX<:Number, TY<:Number, T<:DF1_Num}(
 	d1::DataF1{TX,TY}, d2::T; nmax::Integer=0,
-	tstart::Real=0, allow::CrossType=CrossType())
+	tstart::Real=-Inf, allow::CrossType=CrossType())
 	x = xveccross(d1-d2, nmax, tstart, allow)
 	TR = typeof(one(promote_type(TX,TY))/2) #TODO: is there better way?
 	y = Vector{TR}(length(x))
@@ -413,7 +413,7 @@ end
 #-------------------------------------------------------------------------------
 function ycross1{TX<:Number, TY<:Number, T<:DF1_Num}(
 	d1::DataF1{TX,TY}, d2::T; n::Integer=1,
-	tstart::Real=0, allow::CrossType=CrossType())
+	tstart::Real=-Inf, allow::CrossType=CrossType())
 	n = max(n, 1)
 	x = xveccross(d1-d2, n, tstart, allow)
 	TR = typeof(one(promote_type(TX,TY))/2) #TODO: is there better way?
@@ -430,7 +430,7 @@ end
 #measdelay: Measure delay between crossing events of two signals:
 #-------------------------------------------------------------------------------
 function measdelay(dref::DataF1, dmain::DataF1; nmax::Integer=0,
-	tstart_ref::Real=0, tstart_main::Real=0,
+	tstart_ref::Real=-Inf, tstart_main::Real=-Inf,
 	xing1::CrossType=CrossType(), xing2::CrossType=CrossType())
 
 	xref = xcross(dref, nmax=nmax, tstart=tstart_ref, allow=xing1)
@@ -447,7 +447,7 @@ end
 
 #measperiod: Measure period between successive zero-crossings:
 #-------------------------------------------------------------------------------
-function measperiod(d::DataF1; nmax::Integer=0, tstart::Real=0,
+function measperiod(d::DataF1; nmax::Integer=0, tstart::Real=-Inf,
 	xing::CrossType=CrossType(), shiftx=true)
 
 	dx = xcross(d, nmax=nmax, tstart=tstart, allow=xing)
@@ -456,7 +456,7 @@ end
 
 #measfreq: Measure 1/period between successive zero-crossings:
 #-------------------------------------------------------------------------------
-function measfreq(d::DataF1; nmax::Integer=0, tstart::Real=0,
+function measfreq(d::DataF1; nmax::Integer=0, tstart::Real=-Inf,
 	xing::CrossType=CrossType(), shiftx=true)
 
 	T = measperiod(d, nmax=nmax, tstart=tstart, xing=xing, shiftx=shiftx)
