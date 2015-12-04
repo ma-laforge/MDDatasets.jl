@@ -94,9 +94,6 @@ end
 
 #==Multi-dimensional data
 ===============================================================================#
-#Types f data to be supported by large multi-dimensional datasets:
-#typealias MDDataElem Union{DataF1,DataFloat,DataInt,DataComplex}
-
 #Asserts whether a type is allowed as an element of a DataMD container:
 elemallowed{T}(::Type{DataMD}, ::Type{T}) = false #By default
 elemallowed(::Type{DataMD}, ::Type{DataFloat}) = true
@@ -137,6 +134,7 @@ call{T}(::Type{DataHR{T}}, sweeps::Vector{PSweep}) = DataHR{T}(sweeps, Array{T}(
 
 #Construct DataHR{DataF1} from DataHR{Number}
 #Collapse inner-most sweep (last dimension), by default:
+#TODO: use convert(...) instead?
 function call{T<:Number}(::Type{DataHR{DataF1}}, d::DataHR{T})
 	sweeps = d.sweeps[1:end-1]
 	x = d.sweeps[end].v
@@ -148,6 +146,20 @@ function call{T<:Number}(::Type{DataHR{DataF1}}, d::DataHR{T})
 	end
 	return result
 end
+
+#Relay function, so people can blindly convert to DataHR{DataF1} using any DataHR:
+call(::Type{DataHR{DataF1}}, d::DataHR{DataF1}) = d
+
+
+#==Type aliases
+===============================================================================#
+#Shorthands:
+typealias DF1_Num Union{DataF1,Number}
+#typealias MD_Num Union{DataMD,Number}
+
+#Alternative to DF1_Num?:
+#typealias MDDataElem Union{DataF1,DataFloat,DataInt,DataComplex}
+
 
 #==Type promotions
 ===============================================================================#
