@@ -393,7 +393,7 @@ end
 
 #TODO: Make more efficient (don't use "value")
 #-------------------------------------------------------------------------------
-function ycross{TX<:Number, TY<:Number, T<:Union{DataF1, Number}}(
+function ycross{TX<:Number, TY<:Number, T<:DF1_Num}(
 	d1::DataF1{TX,TY}, d2::T; nmax::Integer=0,
 	tstart::Real=0, allow::CrossType=CrossType())
 	x = xveccross(d1-d2, nmax, tstart, allow)
@@ -404,14 +404,14 @@ function ycross{TX<:Number, TY<:Number, T<:Union{DataF1, Number}}(
 	end
 	return DataF1(x, y)
 end
-function ycross{T<:Union{DataF1, Number}}(::DS{:event}, d1::DataF1, d2::T, args...; kwargs...)
+function ycross{T<:DF1_Num}(::DS{:event}, d1::DataF1, d2::T, args...; kwargs...)
 	d = ycross(args...;kwargs...)
 	return DataF1(collect(1:length(d.x)), d.y)
 end
 
 #ycross1: return a single crossing point (new name for type stability)
 #-------------------------------------------------------------------------------
-function ycross1{TX<:Number, TY<:Number, T<:Union{DataF1, Number}}(
+function ycross1{TX<:Number, TY<:Number, T<:DF1_Num}(
 	d1::DataF1{TX,TY}, d2::T; n::Integer=1,
 	tstart::Real=0, allow::CrossType=CrossType())
 	n = max(n, 1)
