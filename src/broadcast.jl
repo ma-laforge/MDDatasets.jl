@@ -196,6 +196,12 @@ function _broadcast{T}(::Type{T}, s::Vector{PSweep}, fn::Function, args...; kwar
 	return result
 end
 
+#Trap to provide more useful message:
+function broadcast(ct::CastType, fn::Function, args...; kwargs...)
+	msg = "Cast type not supported for call to $fn: $ct"
+	throw(ArgumentError(msg))
+end
+
 #Find base sweep for a 1-argument broadcast
 #-------------------------------------------------------------------------------
 function fnbasesweep(fn::Function, d)
@@ -304,9 +310,16 @@ end
 #Data reducing (DataF1, DataF1)
 function broadcast(::CastTypeRed2{DataF1,1,DataF1,2}, fn::Function, d1, d2, args...; kwargs...)
 	(d1, d2) = ensure_coll_DataF1(fn, d1, d2) #Collapse DataHR{Number}  => DataHR{DataF1}
-	TR = promote_type(findytypes(d1.subsets)...,findytypes(d1.subsets)...) #TODO: Better way?
+	TR = promote_type(findytypes(d1.subsets)...,findytypes(d2.subsets)...) #TODO: Better way?
 	_broadcast(DataF1, fnbasesweep(fn, d1, d2), fn, d1, d2, args...; kwargs...)
 end
 
+#More custom broadcast functions
+#-------------------------------------------------------------------------------
+function broadcast(::CastType2{DataF1,1,Number,2}, fn::Function, d1, d2, args...; kwargs...)
+	d1 = ensure_coll_DataF1(fn, d1) #Collapse DataHR{Number}  => DataHR{DataF1}
+	TR = promote_type(findytypes(d1.subsets)...,eltype(d2)) #TODO: Better way?
+	_broadcast(DataF1, fnbasesweep(fn, d1, d2), fn, d1, d2, args...; kwargs...)
+end
 
 #Last Line
