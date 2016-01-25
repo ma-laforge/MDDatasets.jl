@@ -56,18 +56,6 @@ By default, "interpolation" of data outside the range of a `DataF1` object (extr
  - **`integ`**`(d::DataF1, shiftx=[T/F])`: Returns definite integral of `d`
  - **`iinteg`**`(d::DataF1, shiftx=[T/F])`: Returns dataset with indefinite integral of `d`
 
-#### Circuit Math
-
- - **`dB20`**`(v)`: Returns `20*log10(|v|)`.
- - **`dB10`**`(v)`: Returns `10*log10(v)`.
- - **`dB`**`(v, u::Symbol)`, where u &isin; {:Wratio, :Vratio, :Iratio}
- - **`dBm`**`(v, u::Symbol)`, where u &isin; {:W, :VRMS, :Vpk}
- - **`dBW`**`(v, u::Symbol)`, where u &isin; {:W, :VRMS, :Vpk}
- - **`Vpk`**`(v, u::Symbol, R=[RESVAL])`, where u &isin; {:W, :VRMS}
- - **`Ipk`**`(v, u::Symbol, R=[RESVAL])`, where u &isin; {:W, :IRMS}
- - **`VRMS`**`(v, u::Symbol, R=[RESVAL])`, where u &isin; {:W, :Vpk}
- - **`IRMS`**`(v, u::Symbol, R=[RESVAL])`, where u &isin; {:W, :Ipk}
-
 #### Basic Dataset Operations
  - **`xval`**`(::DataF1)`: Returns a dataset with where y(x) = x.
  - **`value`**`(::DataF1, x=[XVALUE])`: Returns `y(XVALUE)`

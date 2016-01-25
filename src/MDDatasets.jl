@@ -30,7 +30,6 @@ include("base.jl")
 include("datasetop.jl")
 include("broadcast.jl")
 include("datasetop_reg.jl")
-include("circuitmath.jl")
 include("measinterface.jl")
 include("show.jl")
 
@@ -106,11 +105,6 @@ TODO: Deprecate direct call of x/ycross/1 & measdelay
 ON CONDITION: Only if this interface does not mess up type stability.
 meas(:xcross, Event, d1)
 ==#
-
-
-#Circuit math:
-#-------------------------------------------------------------------------------
-export dB20, dB10, dB, dBm, dBW, Vpk, Ipk, VRMS, IRMS
 
 end
 
