@@ -1,4 +1,4 @@
-#Test code
+#Test DataHR manipulations
 #-------------------------------------------------------------------------------
 
 using MDDatasets

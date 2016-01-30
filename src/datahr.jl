@@ -1,4 +1,4 @@
-#MDDatasets DataLL defninitions
+#MDDatasets DataHR defninitions
 #-------------------------------------------------------------------------------
 
 #==Main types
@@ -100,6 +100,22 @@ function coordinates(d::DataHR, subscr::Tuple=0)
 	end
 	return result
 end
+
+
+#==Help with construction
+===============================================================================#
+
+#Implement "fill(DataHR, ...) do sweepval" syntax:
+function Base.fill!(fn::Function, d::DataHR)
+	for inds in subscripts(d)
+		d.elem[inds...] = fn(coordinates(d, inds)...)
+	end
+	return d
+end
+Base.fill{T}(fn::Function, ::Type{DataHR{T}}, sweeps::Vector{PSweep}) =
+	fill!(fn, DataHR{T}(sweeps))
+Base.fill(fn::Function, ::Type{DataHR}, sweeps::Vector{PSweep}) = fill(fn, DataHR{DataF1}, sweeps)
+Base.fill{T}(fn::Function, ::Type{DataHR{T}}, sweep::PSweep) = fill(fn, DataHR{DataF1}, PSweep[sweep])
 
 
 #==Data generation

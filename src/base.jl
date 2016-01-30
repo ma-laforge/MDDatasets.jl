@@ -90,7 +90,7 @@ Base.promote_rule{TX1,TX2,TY1,TY2}(::Type{DataF1{TX1,TY1}},::Type{DataF1{TX2,TY2
 #==Supported data types
 ===============================================================================#
 #Identifies whether a type is allowed as an element of a DataMD container
-#(ex: DataHR, DataLL):
+#(ex: DataHR, DataRS):
 #==IMPORTANT:
    -Want to support ONLY base data types & leaf types (T<:LeafDS)
 	-Want to support leaf types like DataF1 in GENERIC fashion

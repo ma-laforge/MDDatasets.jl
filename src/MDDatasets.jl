@@ -26,9 +26,11 @@ DS(v::Symbol) = DS{v}()
 #-------------------------------------------------------------------------------
 include("functions.jl")
 include("math.jl")
+include("physics.jl")
 include("arrays.jl")
 include("base.jl")
 include("datahr.jl")
+include("datars.jl")
 include("datasetop.jl")
 include("broadcast.jl")
 include("datasetop_reg.jl")
@@ -46,7 +48,7 @@ export DataMD #Prefered abstraction for high-level functions
 export PSweep #Parameter sweep
 export Index #A way to identify parameters as array indicies
 export DataFloat, DataInt, DataComplex, DataF1 #Leaf data types
-export DataHR
+export DataHR, DataRS
 
 #Accessor functions:
 #-------------------------------------------------------------------------------
