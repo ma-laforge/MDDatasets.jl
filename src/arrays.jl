@@ -1,11 +1,33 @@
-#MDDatasets vector operations
+#MDDatasets: Additional array/vector operations
 #-------------------------------------------------------------------------------
+#=NOTE:
+These tools should eventually be moved to a separate unit.
+=#
+
+
+#==Iterators
+===============================================================================#
+#Enables array iteration using array subscripts:
+immutable SubscriptIterator
+	sz::Tuple
+	elemcount::Int
+end
+#Implement iterator interface
+Base.start(::SubscriptIterator) = 1
+Base.next(ci::SubscriptIterator, iterstate::Int) = (ind2sub(ci.sz, iterstate), iterstate+1)
+Base.done(ci::SubscriptIterator, iterstate::Int) = iterstate > ci.elemcount;
+Base.eltype(::Type{SubscriptIterator}) = Tuple
+Base.length(ci::SubscriptIterator) = ci.elemcount;
+
+#Obtain an array iterator:
+subscripts(a::Array) = SubscriptIterator(size(a), length(a))
+
 
 #==Useful tests
 ===============================================================================#
 
 #Verifies that v is strictly increasing (no repeating values):
-function isincreasing{T}(v::Vector{T})
+function isincreasing(v::Vector)
 	prev = v[1]
 	for x in v[2:end]
 		if x <= prev
@@ -18,7 +40,7 @@ end
 isincreasing(r::Range) = (step(r) > 0)
 
 
-#==Useful assertions
+#==Validation functions (throw exceptions)
 ===============================================================================#
 
 
@@ -46,12 +68,8 @@ function findclosestindex(v::Vector, val)
 	throw("Value not found: $val")
 end
 
-
-#==
-===============================================================================#
-
 #Create vector with data left-shifted by n (padded with 0s)
-function lshift{T<:Vector}(v::T, n::Int)
+function lshift(v::Vector, n::Int)
 	@assert(n >= 0, "Cannot shfit by a negative number")
 	result = zeros(v)
 	for i in 1:(length(v)-n)
@@ -61,7 +79,7 @@ function lshift{T<:Vector}(v::T, n::Int)
 end
 
 #Create vector with data right-shifted by n (padded with 0s)
-function rshift{T<:Vector}(v::T, n::Int)
+function rshift(v::Vector, n::Int)
 	@assert(n >= 0, "Cannot shfit by a negative number")
 	result = zeros(v)
 	for i in length(v):-1:(1+n)
@@ -71,7 +89,7 @@ function rshift{T<:Vector}(v::T, n::Int)
 end
 
 #Create vector with data shifted by +/-n (padded with 0s)
-function shift{T<:Vector}(v::T, n::Int)
+function shift(v::Vector, n::Int)
 	if n >= 0
 		return rshift(v, n)
 	else
@@ -81,13 +99,13 @@ end
 
 #Compute difference between two adjacent points:
 #TODO: optimize operations so they run faster
-function delta{T<:Vector}(v::T)
+function delta(v::Vector)
 	return v[2:end] .- v[1:end-1]
 end
 
 #Compute mean of two adjacent points:
 #TODO: optimize operations so they run faster
-function meanadj{T<:Vector}(v::T)
+function meanadj(v::Vector)
 	return (v[1:end-1] .+ v[2:end])./2
 end
 
