@@ -20,18 +20,6 @@ function deltax(d::DataF1; shiftx=true)
 	return DataF1(x, delta(d.y))
 end
 
-function values(sweeplist::Vector{PSweep}, idx::Number)
-	sw = sweeplist[idx].v #Sweep of interest
-	T = eltype(sw)
-	result = DataHR{T}(sweeplist)
-	for coord in subscripts(result)
-		result.subsets[coord...] = sw[coord[idx]]
-	end
-	return result
-end
-values(sweeplist::Vector{PSweep}, id::AbstractString) =
-	values(sweeplist, dimension(sweeplist, id))
-
 
 #==X-value modifiers
 ===============================================================================#

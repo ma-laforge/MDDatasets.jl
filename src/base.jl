@@ -14,13 +14,6 @@ abstract LeafDS <: DataMD #Leaf dataset
 #For type stability.  Identifies result as having event count in x-axis
 const Event = DS{:event}()
 
-#Parameter sweep
-type PSweep{T}
-	id::ASCIIString #TODO: Support UTF8?? - concrete type simplifies writing to HDF5
-	v::Vector{T}
-#TODO: ensure increasing order?
-end
-
 #Explicitly tells multi-dispatch engine a value is meant to be an index:
 immutable Index
 	v::Int
@@ -28,34 +21,17 @@ end
 Index(idx::AbstractFloat) = Index(round(Int,idx)) #Convenient
 value(x::Index) = x.v
 
+#Parameter sweep
+type PSweep{T}
+	id::ASCIIString #TODO: Support UTF8?? - concrete type simplifies writing to HDF5
+	v::Vector{T}
+#TODO: ensure increasing order?
+end
+
 #TODO: Deprecate DataScalar?? - and LeafDS?
 #immutable DataScalar{T<:Number} <: LeafDS
 #	v::T
 #end
-
-immutable Point2D{TX<:Number, TY<:Number}
-	x::TX
-	y::TY
-end
-
-#Allows one to specify limits of a 1D range
-#TODO: do we want to enforce min<=max???
-#TODO: Add parameter to indicate if limits can go negative, overlap, ...??
-immutable Limits1D{T<:Number}
-	min::T
-	max::T
-end
-#Auto-detect type (Limits1D(min=4)):
-Limits1D{T<:Number}(min::T, ::Void) = Limits1D(min, typemax(T))
-Limits1D{T<:Number}(::Void, max::T) = Limits1D(typemin(T), max)
-Limits1D(;min=nothing, max=nothing) = Limits1D(min, max)
-Limits1D(r::Range) = Limits1D(minimum(r), maximum(r)) #TODO: is it preferable to use rng[1/end]?
-
-#Constructor with forced type (Limits1D{Float32}(min=4)):
-call{T<:Number}(::Type{Limits1D{T}}, min::Number, ::Void) = Limits1D{T}(convert(T, min), typemax(T))
-call{T<:Number}(::Type{Limits1D{T}}, ::Void, max::Number) = Limits1D{T}(typemin(T), convert(T, max))
-call{T<:Number}(::Type{Limits1D{T}} ;min=nothing, max=nothing) = Limits1D{T}(min, max)
-call{T<:Number}(::Type{Limits1D{T}}, r::Range) = Limits1D{T}(convert(T,minimum(r)), convert(T,maximum(r)))
 
 
 #==Leaf data elements
@@ -75,9 +51,15 @@ type DataF1{TX<:Number, TY<:Number} <: LeafDS
 end
 #DataF1{TX<:Number, TY<:Number}(::Type{TX}, ::Type{TY}) = DataF1(TX[], TY[]) #Empty dataset
 
+#Create a function of 1 argument from x-values & function of 1 argument:
 function DataF1{TX<:Number}(x::Vector{TX}, y::Function)
 	ytype = typeof(y(x[1]))
 	DataF1(x, ytype[y(elem) for elem in x])
+end
+
+function DataF1(x::Range, y::Function)
+	assertincreasingx(x)
+	return DataF1(collect(x), y)
 end
 
 #Build a DataF1 object from a x-value range (make y=x):
@@ -86,69 +68,6 @@ function DataF1(x::Range)
 	return DataF1(collect(x), collect(x))
 end
 
-function DataF1(x::Range, y::Function)
-	assertincreasingx(x)
-	return DataF1(collect(x), y)
-end
-
-
-#==Multi-dimensional data
-===============================================================================#
-#Asserts whether a type is allowed as an element of a DataMD container:
-elemallowed{T}(::Type{DataMD}, ::Type{T}) = false #By default
-elemallowed(::Type{DataMD}, ::Type{DataFloat}) = true
-elemallowed(::Type{DataMD}, ::Type{DataInt}) = true
-elemallowed(::Type{DataMD}, ::Type{DataComplex}) = true
-elemallowed(::Type{DataMD}, ::Type{DataF1}) = true
-#==TODO:
-   -Is this a good idea?
-   -Would using DataScalar wrapper & <: LeafDS be better?==#
-
-#Hyper-rectangle -representation of data:
-#-------------------------------------------------------------------------------
-#==IMPORTANT:
-   -Want DataHR to support ONLY select concrete types & leaf types
-	-Want to support leaf types like DataF1 in GENERIC fashion
-    (support DataF1[] ONLY - not specific versions of DataF1{X,Y} ==#
-#==NOTE:
-   -Do not restrict DataHR{T} parameter T until constructor.  This allows for
-    a nicer error message.
-      #ie: type DataHR{T<:MDDataElem} <: DataMD ==#
-type DataHR{T} <: DataMD
-	sweeps::Vector{PSweep}
-	subsets::Array{T}
-
-	function DataHR{TA,N}(sweeps::Vector{PSweep}, a::Array{TA,N})
-		@assert(elemallowed(DataMD, T),
-			"Can only create DataHR{T} for T ∈ {DataF1, DataFloat, DataInt, DataComplex}")
-		@assert(arraydims(sweeps)==N, "Number of sweeps must match dimensionality of subsets")
-		return new(sweeps, a)
-	end
-end
-
-#Shorthand (because default (non-parameterized) constructor was overwritten):
-DataHR{T,N}(sweeps::Vector{PSweep}, a::Array{T,N}) = DataHR{T}(sweeps, a)
-
-#Construct DataHR from Vector{PSweep}:
-call{T}(::Type{DataHR{T}}, sweeps::Vector{PSweep}) = DataHR{T}(sweeps, Array{T}(arraysize(sweeps)...))
-
-#Construct DataHR{DataF1} from DataHR{Number}
-#Collapse inner-most sweep (last dimension), by default:
-#TODO: use convert(...) instead?
-function call{T<:Number}(::Type{DataHR{DataF1}}, d::DataHR{T})
-	sweeps = d.sweeps[1:end-1]
-	x = d.sweeps[end].v
-	result = DataHR{DataF1}(sweeps) #Construct empty results
-	_sub = length(d.sweeps)>1?subscripts(result):[tuple()]
-	for coord in _sub
-		y = d.subsets[coord...,:]
-		result.subsets[coord...] = DataF1(x, reshape(y, length(y)))
-	end
-	return result
-end
-
-#Relay function, so people can blindly convert to DataHR{DataF1} using any DataHR:
-call(::Type{DataHR{DataF1}}, d::DataHR{DataF1}) = d
 
 
 #==Type aliases
@@ -164,9 +83,26 @@ typealias DF1_Num Union{DataF1,Number}
 #==Type promotions
 ===============================================================================#
 Base.promote_rule{T1<:DataF1, T2<:Number}(::Type{T1}, ::Type{T2}) = DataF1
-Base.promote_rule{T1<:DataHR, T2<:Number}(::Type{T1}, ::Type{T2}) = DataHR
 Base.promote_rule{TX1,TX2,TY1,TY2}(::Type{DataF1{TX1,TY1}},::Type{DataF1{TX2,TY2}}) =
 	DataF1{promote_type(TX1,TX2),promote_type(TY1,TY2)}
+
+
+#==Supported data types
+===============================================================================#
+#Identifies whether a type is allowed as an element of a DataMD container
+#(ex: DataHR, DataLL):
+#==IMPORTANT:
+   -Want to support ONLY base data types & leaf types (T<:LeafDS)
+	-Want to support leaf types like DataF1 in GENERIC fashion
+    (support DataF1[] ONLY - not concrete versions of DataF1{X,Y}[] ==#
+elemallowed{T}(::Type{DataMD}, ::Type{T}) = false #By default
+elemallowed(::Type{DataMD}, ::Type{DataFloat}) = true
+elemallowed(::Type{DataMD}, ::Type{DataInt}) = true
+elemallowed(::Type{DataMD}, ::Type{DataComplex}) = true
+elemallowed(::Type{DataMD}, ::Type{DataF1}) = true
+#==TODO:
+   -Is this a good idea?
+   -Would using DataScalar wrapper & <: LeafDS be better?==#
 
 
 #==Useful assertions
@@ -207,41 +143,12 @@ function validate(d::DataF1)
 end
 
 
-#==Basic Point2D functionality
+#==Basic PSweep functionality (traits)
 ===============================================================================#
+Base.values(sweep::PSweep) = sweep.v
+Base.length(sweep::PSweep) = length(sweep.v)
 
-
-#==Basic Limits1D functionality
-===============================================================================#
-Base.clamp(v, r::Limits1D) = clamp(v, r.min, r.max)
-Base.clamp!(v, r::Limits1D) = clamp!(v, r.min, r.max)
-
-
-#==Basic PSweep functionality
-===============================================================================#
 Base.names(list::Vector{PSweep}) = [s.id for s in list]
-
-#dimensionality of array
-arraydims(list::Vector{PSweep}) = max(1, length(list))
-
-#Compute the size of an array from a Vector{PSweep}:
-function arraysize(list::Vector{PSweep})
-	dims = Int[]
-	for s in list
-		push!(dims, length(s.v))
-	end
-	if 0 == length(dims) #Without sweeps, you can still have a single subset
-		push!(dims, 1)
-	end
-	return tuple(dims...)
-end
-
-#Returns the dimension corresponding to the given string:
-function dimension(list::Vector{PSweep}, id::AbstractString)
-	dim = findfirst((s)->(id==s.id), list)
-	@assert(dim>0, "Sweep not found: $id.")
-	return dim
-end
 
 #Return a list of indicies corresponding to desired sweep values:
 function indices(sweep::PSweep, vlist)
@@ -251,21 +158,6 @@ function indices(sweep::PSweep, vlist)
 	end
 	return result
 end
-
-#Returns the subscripts for the DataHR subsets corresponding to list.
-#TODO: rename arraysubscripts?
-#TODO: test me
-function subscripts(list::Vector{PSweep})
-	dim = arraysize(list)
-	len = prod(dim)
-	return [ind2sub(dim,i) for i in 1:len]
-end
-
-
-#==Basic LeafDS functionality
-===============================================================================#
-
-subsets{T<:LeafDS}(ds::T) = [ds]
 
 
 #==Basic DataF1 functionality
@@ -290,93 +182,8 @@ function findytypes(a::Array{DataF1})
 end
 
 
-#==Basic DataHR functionality
-===============================================================================#
-subsets(ds::DataHR) = ds.subsets
-subscripts(d::DataHR) = [ind2sub(d.subsets,i) for i in 1:length(d.subsets)]
-sweeps(d::DataHR) = d.sweeps
-
-#Obtain parameter info
-#-------------------------------------------------------------------------------
-parameter(d::DataHR, dim::Int, idx::Int) = d.sweeps[dim].v[idx]
-parameter(d::DataHR, dim::Int, coord::Tuple) = parameter(d, dim, coord[dim])
-parameter(d::DataHR, id::AbstractString, idx::Int) =
-	parameter(d, dimension(d.sweeps, id), idx)
-parameter(d::DataHR, id::AbstractString, coord::Tuple) =
-	parameter(d, dimension(d.sweeps, id), coord[dim])
-
-#Returns all parameters (not a single parameter) @ specified coordinate
-#TODO: rename?
-function parameter(d::DataHR, coord::Tuple=0)
-	result = []
-	if length(d.sweeps) > 0
-		for i in 1:length(coord)
-			push!(result, parameter(d, i, coord[i]))
-		end
-	end
-	return result
-end
-
-
-#==Dataset reductions
-===============================================================================#
-
-#Like sub(A, inds...), but with DataHR:
-function getsubarray{T}(d::DataHR{T}, inds...)
-	sweeps = PSweep[]
-	idx = 1
-	for rng in inds
-		sw = d.sweeps[idx]
-
-		#Only provide a sweep if user selects a range of more than one element:
-		addsweep = Colon == typeof(rng) || length(rng)>1
-		if addsweep
-			push!(sweeps, PSweep(sw.id, sw.v[rng]))
-		end
-		idx +=1
-	end
-	return DataHR{T}(sweeps, reshape(sub(d.subsets, inds...), arraysize(sweeps)))
-end
-
-#sub(DataHR, inds...), using key/value pairs:
-function getsubarraykw{T}(d::DataHR{T}; kwargs...)
-	sweeps = PSweep[]
-	indlist = Vector{Int}[]
-	for sweep in d.sweeps
-		keepsweep = true
-		arg = getkwarg(kwargs, symbol(sweep.id))
-		if arg != nothing
-			inds = indices(sweep, arg)
-			push!(indlist, inds)
-			if length(inds) > 1
-				keepsweep = false
-				push!(sweeps, PSweep(sweep.id, sweep.v[inds...]))
-			end
-		else #Keep sweep untouched:
-			push!(indlist, 1:length(sweep.v))
-			push!(sweeps, sweep)
-		end
-	end
-	return DataHR{T}(sweeps, reshape(sub(d.subsets, indlist...), arraysize(sweeps)))
-end
-
-function Base.sub{T}(d::DataHR{T}, args...; kwargs...)
-	if length(kwargs) > 0
-		return getsubarraykw(d, args...; kwargs...)
-	else
-		return getsubarray(d, args...)
-	end
-end
-
-
 #==Interpolations
 ===============================================================================#
-
-#Interpolate between two points.
-function interpolate{TX<:Number, TY<:Number}(p1::Point2D{TX,TY}, p2::Point2D{TX,TY}; x::Number=0)
-	m = (p2.y-p1.y) / (p2.x-p1.x)
-	return m*(x-p1.x)+p1.y
-end
 
 #Interpolate value of a DataF1 dataset for a given x:
 #NOTE:

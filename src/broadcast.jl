@@ -34,12 +34,12 @@ CastTypeRed{T1,T2}(::Type{T1}, pos1::Int, ::Type{T2}, pos2::Int) =
 
 
 
-type CoordinateMap
-	outidx::Vector{Int} #List of indices (of output coordinate)
-	outlen::Int #Number of indices in output coordinate
+type SubscriptMap
+	outidx::Vector{Int} #List of indices (of output array)
+	outlen::Int #Number of indices in output subscript
 end
-CoordinateMap(inlen::Int, outlen::Int) =
-	CoordinateMap(Vector{Int}(inlen), outlen)
+SubscriptMap(inlen::Int, outlen::Int) =
+	SubscriptMap(Vector{Int}(inlen), outlen)
 
 
 #==Constants
@@ -95,11 +95,11 @@ basesweep(d1::DataHR, d2::DataHR) = basesweep(d1.sweeps,d2.sweeps)
 basesweep(d1::DataHR, d2) = basesweep(d1.sweeps,d2)
 basesweep(d1, d2::DataHR) = basesweep(d2.sweeps,d2)
 
-#Functions to map coordinates when broadcasting up a DataHR dataset
+#Functions to map array dimensions when broadcasting up a DataHR dataset
 #-------------------------------------------------------------------------------
 function getmap(basesweep::Vector{PSweep}, subsweep::Vector{PSweep})
 	assertuniqueids(basesweep)
-	result = CoordinateMap(length(basesweep), length(subsweep))
+	result = SubscriptMap(length(basesweep), length(subsweep))
 	found = zeros(Bool, length(subsweep))
 	for i in 1:length(basesweep)
 		idx = findfirst((x)->(x.id==basesweep[i].id), subsweep)
@@ -115,11 +115,11 @@ function getmap(basesweep::Vector{PSweep}, subsweep::Vector{PSweep})
 	if !all(found); throw(error_mismatchedsweep(basesweep, subsweep)); end
 	return result
 end
-function remap(_map::CoordinateMap, coord::Vector{Int})
+function remap(_map::SubscriptMap, inds::Vector{Int})
 	result = Vector{Int}(_map.outlen)
-	for i in 1:length(coord)
+	for i in 1:length(inds)
 		idx = _map.outidx[i]
-		if idx > 0; result[idx] = coord[i]; end
+		if idx > 0; result[idx] = inds[i]; end
 	end
 	return result
 end
@@ -129,15 +129,15 @@ end
 ===============================================================================#
 function broadcast{T<:Number}(s::Vector{PSweep}, d::T)
 	result = DataHR{T}(s)
-	for i in 1:length(result.subsets)
-		result.subsets[i] = d
+	for i in 1:length(result.elem)
+		result.elem[i] = d
 	end
 	return result
 end
 function broadcast(s::Vector{PSweep}, d::DataF1)
 	result = DataHR{DataF1}(s)
-	for i in 1:length(result.subsets)
-		result.subsets[i] = d
+	for i in 1:length(result.elem)
+		result.elem[i] = d
 	end
 	return result
 end
@@ -145,8 +145,8 @@ function broadcast{T}(s::Vector{PSweep}, d::DataHR{T})
 	if s == d.sweeps; return d; end
 	_map = getmap(s, d.sweeps)
 	result = DataHR{T}(s)
-	for coord in subscripts(result)
-		result.subsets[coord...] = d.subsets[remap(_map, coord)...]
+	for inds in subscripts(result)
+		result.elem[inds...] = d.elem[remap(_map, inds)...]
 	end
 	return result
 end
@@ -173,11 +173,11 @@ function _broadcast{T}(::Type{T}, s::Vector{PSweep}, fn::Function, args...; kwar
 		end
 	end
 	result = DataHR{T}(s) #Create empty result
-	for i in 1:length(result.subsets)
+	for i in 1:length(result.elem)
 		curargs = Vector{Any}(length(bargs))
 		for j in 1:length(bargs)
 			if typeof(bargs[j]) <: DataHR
-				curargs[j] = bargs[j].subsets[i]
+				curargs[j] = bargs[j].elem[i]
 			else
 				curargs[j] = bargs[j]
 			end
@@ -186,12 +186,12 @@ function _broadcast{T}(::Type{T}, s::Vector{PSweep}, fn::Function, args...; kwar
 		for j in 1:length(bkwargs)
 			(k,v) = bkwargs[j]
 			if typeof(v) <: DataHR
-				curkwargs[j] = tuple(k, v.subsets[i])
+				curkwargs[j] = tuple(k, v.elem[i])
 			else
 				curkwargs[j] = bkwargs[j]
 			end
 		end
-		result.subsets[i] = fn(curargs...; curkwargs...)
+		result.elem[i] = fn(curargs...; curkwargs...)
 	end
 	return result
 end
@@ -225,7 +225,7 @@ broadcast{T}(::CastType1{Number,1}, fn::Function, d::DataHR{T}, args...; kwargs.
 broadcast{T<:Number}(::CastTypeRed1{Number,1}, fn::Function, d::DataHR{T}, args...; kwargs...) =
 	_broadcast(T, fnbasesweep(fn, d), fn, d, args...; kwargs...)
 function broadcast(::CastTypeRed1{Number,1}, fn::Function, d::DataHR{DataF1}, args...; kwargs...)
-	TR = promote_type(findytypes(d.subsets)...) #TODO: Better way?
+	TR = promote_type(findytypes(d.elem)...) #TODO: Better way?
 	_broadcast(TR, fnbasesweep(fn, d), fn, d, args...; kwargs...)
 end
 
@@ -244,7 +244,7 @@ end
 #Data reducing (DataF1)
 function broadcast(::CastTypeRed1{DataF1,1}, fn::Function, d, args...; kwargs...)
 	d = ensure_coll_DataF1(fn, d) #Collapse DataHR{Number}  => DataHR{DataF1}
-	TR = promote_type(findytypes(d.subsets)...) #TODO: Better way?
+	TR = promote_type(findytypes(d.elem)...) #TODO: Better way?
 	_broadcast(TR, fnbasesweep(fn, d), fn, d, args...; kwargs...)
 end
 
@@ -310,7 +310,7 @@ end
 #Data reducing (DataF1, DataF1)
 function broadcast(::CastTypeRed2{DataF1,1,DataF1,2}, fn::Function, d1, d2, args...; kwargs...)
 	(d1, d2) = ensure_coll_DataF1(fn, d1, d2) #Collapse DataHR{Number}  => DataHR{DataF1}
-	TR = promote_type(findytypes(d1.subsets)...,findytypes(d2.subsets)...) #TODO: Better way?
+	TR = promote_type(findytypes(d1.elem)...,findytypes(d2.elem)...) #TODO: Better way?
 	_broadcast(DataF1, fnbasesweep(fn, d1, d2), fn, d1, d2, args...; kwargs...)
 end
 
@@ -318,7 +318,7 @@ end
 #-------------------------------------------------------------------------------
 function broadcast(::CastType2{DataF1,1,Number,2}, fn::Function, d1, d2, args...; kwargs...)
 	d1 = ensure_coll_DataF1(fn, d1) #Collapse DataHR{Number}  => DataHR{DataF1}
-	TR = promote_type(findytypes(d1.subsets)...,eltype(d2)) #TODO: Better way?
+	TR = promote_type(findytypes(d1.elem)...,eltype(d2)) #TODO: Better way?
 	_broadcast(DataF1, fnbasesweep(fn, d1, d2), fn, d1, d2, args...; kwargs...)
 end
 

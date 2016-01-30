@@ -25,8 +25,10 @@ DS(v::Symbol) = DS{v}()
 
 #-------------------------------------------------------------------------------
 include("functions.jl")
-include("vectorop.jl") #Some useful vector-only tools
+include("math.jl")
+include("arrays.jl")
 include("base.jl")
+include("datahr.jl")
 include("datasetop.jl")
 include("broadcast.jl")
 include("datasetop_reg.jl")
@@ -48,11 +50,12 @@ export DataHR
 
 #Accessor functions:
 #-------------------------------------------------------------------------------
-export value #High-collision WARNING: other modules probably want to export "value"
-export subsets
-export subscripts #Get subscripts to access each element in DataHR.
+export value #High-collision WARNING: other modules probably want to export "value".
+export sweep #Access values from a particular parameter sweep.
 export sweeps #Get the list of parameter sweeps in DataHR.
-export parameter #Get parameter sweep info regarding as DataHR subset
+export subscripts #Provides subscripts iterator to access each element in DataHR.
+export coordinates #Get parameter sweep coordinates corresponding to given subscripts.
+export parameter #Get parameter values for a particular sweep.
 
 #Basic dataset operations:
 #-------------------------------------------------------------------------------
