@@ -9,16 +9,21 @@ The MDDatasets.jl module provides tools to simplify manipulation of multi-dimens
  - **`DataInt, DataFloat, DataComplex`**: Useful aliases for largest practical data types on a platform (not yet platform dependent).
  - **`DataMD`**: Abastract data type for multi-dimensional data.
  - **`DataF1`**: Represens a function of 1 variable, y(x) using a x/y vector pair.
- - **`DataHR{DataF1/DataInt/DataFloat/DataComplex}`**: A hyper-rectangle (as opposed to hyper-cube) organizaton of data.  Principally designed to collect massive datasets with independent control variables ([see examples](#SampleUsage)).
- - **`DataAP{DataF1/...}`**: (Not yet implemeted) Each subset of data corresponds to an arbitrary collection of test conditions.
+ - **`DataHR{DataF1/DataInt/DataFloat/DataComplex}`**: A hyper-rectangle (as opposed to hyper-cube) organizaton of data.  Principally designed to collect massive datasets with *independent* control variables ([see examples](#SampleUsage_DataHR)).
+ - **`DataRS{DataF1/DataInt/DataFloat/DataComplex}`**: A recursive-sweep organization of data.  Principally designed to collect massive datasets with *dependent* control variables([see examples](#SampleUsage_DataRS)).
  - **`PSweep`**: A parameter sweep (i.e. an independent control variable that generates experimental points in a `DataHR` dataset).
-
 
 ### Automatic Interpolation
 
 Operations performed on two `DataF1` objects will result in the interpolation of the corresponding `{x, y}` coordinates.
 
 By default, "interpolation" of data outside the range of a `DataF1` object (extrapolated) is assumed to be 0.
+
+### Automatic Broadcast
+
+Operations performed on multi-dimensional data sets, `DataHR` and `DataRS`, will be broadcast to each element of the dataset.
+
+Thus, explicit looping over `DataHR` & `DataRS` structures is not typically required.
 
 ### Function Listing
 
@@ -112,18 +117,68 @@ Examples of the MDDatasets.jl capabilities can be found under the [test director
 
 More advanced usage examples can be found in the [sample directory](https://github.com/ma-laforge/SignalProcessing.jl/tree/master/sample) of the [SignalProcessing.jl module](https://github.com/ma-laforge/SignalProcessing.jl).
 
+<a name="SampleUsage_DataHR"></a>
+## Sample Usage: Constructing a Hyper-Rectangular Dataset:
+
+Assuming input data can be generated using the following:
+
+	t = DataF1((0:.01:10)*1e-9) #Time vector stored as a function of 1 argument
+
+	#NOTE: get_ydata returns type "DataF1" (stores data as a function of 1 argument):
+	get_ydata(t::DataF1, tbit, vdd, trise) = sin(2pi*t/tbit)*(trise/tbit)+vdd
+
+One can create a relatively complex Hyper-Rectangular (DataHR) dataset using the following pattern:
+
+	#Parametric sweep representing independent variables of an experiment:
+	sweeplist = PSweep[
+		PSweep("tbit", [1, 3, 9] * 1e-9)
+		PSweep("VDD", 0.9 * [0.9, 1, 1.1])
+		PSweep("trise_frac", [0.1, 0.15, 0.2]) #Rise time as fraction of bit rate
+	]
+
+	#Generate Hyper-Recangular dataset (DataHR, using dimensions from sweeplist)
+	datahr = fill(DataHR{DataF1}, sweeplist) do tbit, vdd, trise_frac
+		trise = trise_frac*tbit
+		return get_ydata(t, tbit, vdd, trise)
+	end
+
+<a name="SampleUsage_DataRS"></a>
+## Sample Usage: Constructing a Recursive-Sweep Dataset:
+
+Assuming input data can be generated using the following:
+
+	t = DataF1((0:.01:10)*1e-9) #Time vector stored as a function of 1 argument
+
+	#NOTE: get_ydata returns type "DataF1" (stores data as a function of 1 argument):
+	get_ydata(t::DataF1, tbit, vdd, trise) = sin(2pi*t/tbit)*(trise/tbit)+vdd
+
+One can create a relatively complex Recursive-Sweep (DataRS) dataset using the following pattern:
+
+	datars = fill(DataRS, PSweep("tbit", [1, 3, 9] * 1e-9)) do tbit
+		fill(DataRS, PSweep("VDD", 0.9 * [0.9, 1, 1.1])) do vdd
+
+			#Inner-most sweep: need to specify element type (DataF1):
+			fill(DataRS{DataF1}, PSweep("trise", [0.1, 0.15, 0.2] * tbit)) do trise
+				return get_ydata(t, tbit, vdd, trise)
+			end
+		end
+	end
+
 ## Known Limitations
 
 ### Implementation
 
- 1. Support for broadcasting functions over `DataHR{DataF1/Number}` vectors is fairly extensive.  Note, however, that some signatures of broadcasting function "traps" are probably over-specified and others are probably under-specified.  This will hopefully be cleaned up soon - and will likely require re-working the `broadcast` functions, and/or adding new macros.
-  - There may therefore be unexpected failures to broadcast out on `DataHR` datasets.
+ 1. Support for broadcasting functions over `DataHR` types is fairly extensive.
+  - Nonetheless, the system is incomplete/imperfect, and unexpected failures will occur.
+ 1. Support of `DataRS` vectors is very limited at the moment.
+  - Very limited support of function broadcasting.
+  - No support in EasyPlot/EasyData.
 
 ### Compatibility
 
 Extensive compatibility testing of MDDatasets.jl has not been performed.  The module has been tested using the following environment(s):
 
- - Linux / Julia-0.4.0 (64-bit)
+ - Linux / Julia-0.4.2 (64-bit)
 
 ## Disclaimer
 
