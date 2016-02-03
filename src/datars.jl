@@ -103,6 +103,29 @@ function parameter(d::DataRS, sweepid::AbstractString)
 	end
 end
 
+#Generate DataRS from DataHR.
+#-------------------------------------------------------------------------------
+function _buildDataRS(d::DataHR, firstinds::Vector{Int})
+	curidx = length(firstinds) + 1
+	sweep = d.sweeps[curidx]
+	if curidx < length(d.sweeps)
+		result = DataRS{DataRS}(sweep)
+		for i in 1:length(sweep.v)
+			result.elem[i] = _buildDataRS(d, vcat(firstinds, i))
+		end
+	else #Last index.  Copy data over:
+		result = DataRS{eltype(d.elem)}(sweep)
+		for i in 1:length(sweep.v)
+			result.elem[i] = d.elem[firstinds..., i]
+		end
+	end
+	return result
+end
+
+function DataRS(d::DataHR)
+	return _buildDataRS(d, Int[])
+end
+
 
 #==User-friendly show functions
 ===============================================================================#
