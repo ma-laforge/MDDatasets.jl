@@ -55,19 +55,29 @@ const CAST_MDRED2 = CastTypeRed(DataF1, 1, DataF1, 2)
 
 #==result_type: Figure out result type for a function call with given arguments
 ===============================================================================#
-#Advantage: Helps with readability.
-#Disadvantage: Might add extra level on call stack for simple operations (hope inlines).
-#fn: (Future) special functions might behave differently.
+#=NOTES:
+ - Advantage: Helps with readability.
+ - Disadvantage: Might add extra level on call stack for simple operations (hope inlines).
+
+ - result_type never returns concrete DataF1{TX,TY}.  Only abstract "DataF1".
+
+ - (Future) special functions might behave differently.
+   ie: The default return types specified here are not necessarily correct.
+   Methods should be overwritten for special functions.
+   Sadly: can't currently dispatch on function.  Need to think about this.
+=#
 #-------------------------------------------------------------------------------
-#NOTE: Consider result to be abstract "DataF1" when dealing with DataF1
 
 result_type{T1}(fn::Function, ::Type{T1}) = T1 #In=out... wrong with functions like sin(Int)=>Float64
 result_type{T1<:DataF1}(fn::Function, ::Type{T1}) = DataF1
+
 
 result_type{T1<:Number, T2<:Number}(fn::Function, ::Type{T1}, ::Type{T2}) = promote_type(T1, T2)
 result_type{T1<:DataF1, T2<:DataF1}(fn::Function, ::Type{T1}, ::Type{T2}) = DataF1
 result_type{T1<:DataF1, T2<:Number}(fn::Function, ::Type{T1}, ::Type{T2}) = DataF1
 result_type{T1<:Number, T2<:DataF1}(fn::Function, ::Type{T1}, ::Type{T2}) = DataF1
+
+result_type{TX,TY}(CT::CastTypeRed, fn::Function, ::Type{DataF1{TX,TY}}) = TY
 
 
 #==eltype/valtype: Figure out result type for a function call with given arguments
@@ -102,11 +112,15 @@ end
 #-------------------------------------------------------------------------------
 #fn(DataF1) - core: fn(Number)
 broadcast(::CastType1{Number,1}, fn::Function, d::DataF1, args...; kwargs...) =
-	DataF1(d.x, fn(d.y), args...; kwargs...)
+	DataF1(d.x, fn(d.y, args...; kwargs...))
 
 #fn(DataF1) - core: fn(DataF1)
 broadcast(::CastType1{DataF1,1}, fn::Function, d::DataF1, args...; kwargs...) =
 	fn(d, args...; kwargs...)
+
+#Reducing fn(DataF1) - core: fn(Number)
+broadcast(::CastTypeRed1{Number,1}, fn::Function, d::DataF1, args...; kwargs...) =
+	fn(d.y, args...; kwargs...)
 
 #fn(Number, Number) - core: fn(Number, Number)
 broadcast(CT::CastType2{Number,1,Number,2}, fn::Function, d1::Number, d2::Number, args...; kwargs...) =
@@ -124,5 +138,12 @@ broadcast(CT::CastType2{Number,1,Number,2}, fn::Function, d1::DataF1, d2::Number
 broadcast(CT::CastType2{Number,1,Number,2}, fn::Function, d1::Number, d2::DataF1, args...; kwargs...) =
 	apply(fn, d1, d2, args...; kwargs...)
 
+#fn(DataF1, DataF1) - core: fn(DataF1, DataF1)
+broadcast(CT::CastType2{DataF1,1,DataF1,2}, fn::Function, d1::DataF1, d2::DataF1, args...; kwargs...) =
+	fn(d1, d2, args...; kwargs...)
+
+#Reducing fn(DataF1) - core: fn(DataF1)
+broadcast(::CastTypeRed1{DataF1,1}, fn::Function, d::DataF1, args...; kwargs...) =
+	fn(d, args...; kwargs...)
 
 #Last line

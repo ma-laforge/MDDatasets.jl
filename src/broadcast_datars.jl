@@ -2,16 +2,24 @@
 #-------------------------------------------------------------------------------
 
 
-#==General broadcast tools
-===============================================================================#
-#TODO: Move to broadcast.jl
-
 #==result_type: Figure out result type for a function call with given arguments
 ===============================================================================#
-#Consider result to be abstract "DataRS" when dealing with DataRS:
+#=NOTES:
+ - result_type never returns concrete DataRS{T}.  Only abstract "DataRS".
+
+ - The default return types specified here are not necessarily correct.
+   Methods should be overwritten for special functions.
+   Sadly: can't currently dispatch on function.  Need to think about this.
+=#
+
 result_type{T1<:DataRS, T2<:DataRS}(fn::Function, ::Type{T1}, ::Type{T2}) = DataRS
 result_type{T1<:DataRS, T2}(fn::Function, ::Type{T1}, ::Type{T2}) = DataRS
 result_type{T1, T2<:DataRS}(fn::Function, ::Type{T1}, ::Type{T2}) = DataRS
+
+#Reducting functions
+#-------------------------------------------------------------------------------
+result_type{T1<:Number}(CT::CastTypeRed, fn::Function, ::Type{DataRS{T1}}) = T1
+result_type{T}(CT::CastTypeRed, fn::Function, ::Type{DataRS{T}}) = DataRS
 
 
 #==eltype/valtype: Figure out result type for a function call with given arguments
@@ -19,6 +27,7 @@ result_type{T1, T2<:DataRS}(fn::Function, ::Type{T1}, ::Type{T2}) = DataRS
 
 #Element type of an operation with a DataRS (result: DataRS):
 Base.eltype(fn::Function, d1::DataRS) = result_type(fn, eltype(d1))
+
 Base.eltype(fn::Function, d1::DataRS, d2::DataRS) = 
 	result_type(fn, eltype(d1), eltype(d2))
 Base.eltype(fn::Function, d1::DataRS, d2) = 
@@ -26,8 +35,35 @@ Base.eltype(fn::Function, d1::DataRS, d2) =
 Base.eltype(fn::Function, d1, d2::DataRS) = 
 	result_type(fn, typeof(d1), eltype(d2))
 
+#Reducting functions
+#-------------------------------------------------------------------------------
+#Element type afer reducing fn on Array{Number}:
+Base.eltype{T<:Number}(CT::CastTypeRed, fn::Function, a::Vector{T}) = result_type(CT, fn, typeof(a))
 
-#==Broadcast tools specific to DataRS
+#Element type afer reducing fn on Array{DataF1}:
+function Base.eltype(CT::CastTypeRed, fn::Function, a::Array{DataF1})
+	result = Set{DataType}()
+	for elem in a
+		RT = result_type(CT, fn, typeof(elem))
+		push!(result, RT)
+	end
+	return promote_type(result...)
+end
+
+#Element type afer reducing fn on Array{DataRS}:
+function Base.eltype(CT::CastTypeRed, fn::Function, a::Vector{DataRS})
+	result = Set{DataType}()
+	RT = result_type(CT, fn, typeof(a[1]))
+	if DataRS == RT; return DataRS; end
+	for elem in a
+		RT = result_type(CT, fn, typeof(elem))
+		push!(result, RT)
+	end
+	return promote_type(result...)
+end
+
+
+#==Broadcast tools for fn(DataMD) - Can broadcast on 1 argument
 ===============================================================================#
 
 #Broadcast functions capable of operating directly on 1 base type (Number):
@@ -41,15 +77,19 @@ function broadcast(CT::CastType1{Number,1}, fn::Function, d::DataRS, args...; kw
 	return result
 end
 
-#=
-#Data reducing (DataRS{DataF1/Number})
-broadcast{T<:Number}(::CastTypeRed1{Number,1}, fn::Function, d::DataRS{T}, args...; kwargs...) =
-	_broadcast(T, fnbasesweep(fn, d), fn, d, args...; kwargs...)
-function broadcast(::CastTypeRed1{Number,1}, fn::Function, d::DataRS{DataF1}, args...; kwargs...)
-	TR = promote_type(findytypes(d.elem)...) #TODO: Better way?
-	_broadcast(TR, fnbasesweep(fn, d), fn, d, args...; kwargs...)
+#Data reducing fn(DataRS{Number}) - core: fn(Number):
+broadcast{T<:Number}(CT::CastTypeRed1{Number,1}, fn::Function, d::DataRS{T}, args...; kwargs...) =
+	fn(d.elem, args...; kwargs...)
+
+#Data reducing fn(DataRS) - core: fn(Number):
+function broadcast(CT::CastTypeRed1{Number,1}, fn::Function, d::DataRS, args...; kwargs...)
+	RT = eltype(CT, fn, d.elem)
+	result = DataRS{RT}(d.sweep)
+	for i in 1:length(d.sweep)
+		result.elem[i] = broadcast(CT, fn, d.elem[i], args...; kwargs...)
+	end
+	return result
 end
-=#
 
 #Broadcast functions capable of operating only on a dataF1 value:
 #-------------------------------------------------------------------------------
@@ -61,20 +101,31 @@ function broadcast{T}(CT::CastType1{DataF1,1}, fn::Function, d::DataRS{T}, args.
 	end
 	return result
 end
-#=
-#fn(???, DataRS) - core: fn(DataF1):
-function broadcast(::CastType1{DataF1,2}, fn::Function, dany1, d, args...; kwargs...)
-	d = ensure_coll_DataF1(fn, d) #Collapse DataRS{Number}  => DataRS{DataF1}
-	_broadcast(DataF1, fnbasesweep(fn, d), fn, dany1, d, args...; kwargs...)
+#fn(???, DataRS) - core: fn(???, DataF1):
+function broadcast{T}(CT::CastType1{DataF1,2}, fn::Function, dany1, d::DataRS{T}, args...; kwargs...)
+	result = DataRS{T}(d.sweep)
+	for i in 1:length(d.sweep)
+		result.elem[i] = broadcast(CT, fn, dany1, d.elem[i], args...; kwargs...)
+	end
+	return result
 end
-#Data reducing fn(DataRS) - core: fn(DataF1):
-function broadcast(::CastTypeRed1{DataF1,1}, fn::Function, d, args...; kwargs...)
-	d = ensure_coll_DataF1(fn, d) #Collapse DataRS{Number}  => DataRS{DataF1}
-	TR = promote_type(findytypes(d.elem)...) #TODO: Better way?
-	_broadcast(TR, fnbasesweep(fn, d), fn, d, args...; kwargs...)
-end
-=#
 
+#Data reducing fn(DataRS) - core: fn(Number):
+broadcast{T<:Number}(CT::CastTypeRed1{DataF1,1}, fn::Function, d::DataRS{T}, args...; kwargs...) =
+	fn(DataF1(d.sweep.v, d.elem), args...; kwargs...)
+
+#Data reducing fn(DataRS) - core: fn(Number):
+function broadcast(CT::CastTypeRed1{DataF1,1}, fn::Function, d::DataRS, args...; kwargs...)
+	RT = eltype(CT, fn, d.elem)
+	result = DataRS{RT}(d.sweep)
+	for i in 1:length(d.sweep)
+		result.elem[i] = broadcast(CT, fn, d.elem[i], args...; kwargs...)
+	end
+	return result
+end
+
+#==Broadcast tools for fn(DataMD, DataMD) - Can broadcast on 2 arguments
+===============================================================================#
 
 #Broadcast functions capable of operating directly on base types (Number, Number):
 #-------------------------------------------------------------------------------
@@ -112,5 +163,56 @@ function broadcast(CT::CastType2{Number,1,Number,2}, fn::Function,
 	return result
 end
 
+#Broadcast functions capable of operating on DataF1 values:
+#-------------------------------------------------------------------------------
+typealias DF1_DRS Union{DataF1,DataRS}
+#fn(DataRS, DataRS) - core: fn(DataF1, DataF1):
+function broadcast{T1<:DF1_DRS,T2<:DF1_DRS}(CT::CastType2{DataF1,1,DataF1,2}, fn::Function,
+	d1::DataRS{T1}, d2::DataRS{T2}, args...; kwargs...)
+	if d1.sweep != d2.sweep
+		msg = "Sweeps do not match (not yet supported):"
+		throw(ArgumentError(string(msg, "\n", d1.sweep, "\n", d2.sweep)))
+	end
+	result = DataRS{eltype(fn, d1, d2)}(d1.sweep)
+	for i in 1:length(d1.sweep)
+		result.elem[i] = broadcast(CT, fn, d1.elem[i], d2.elem[i], args...; kwargs...)
+	end
+	return result
+end
+function broadcast{T1<:Number,T2<:Number}(CT::CastType2{DataF1,1,DataF1,2}, fn::Function,
+	d1::DataRS{T1}, d2::DataRS{T2}, args...; kwargs...)
 
+	if d1.sweep.id != d2.sweep.id
+		msg = "Sweep ids do not match:"
+		throw(ArgumentError(string(msg, "\n", d1.sweep, "\n", d2.sweep)))
+	end
+	return fn(DataF1(d1.sweep.v, d1.elem), DataF1(d2.sweep.v, d2.elem), args...; kwargs...)
+end
+function broadcast{T1<:Number}(CT::CastType2{DataF1,1,DataF1,2}, fn::Function,
+	d1::DataRS{T1}, d2::DataMD, args...; kwargs...)
+	return broadcast(CT, fn, DataF1(d1.sweep.v, d1.elem), d2, args...; kwargs...)
+end
+function broadcast{T2<:Number}(CT::CastType2{DataF1,1,DataF1,2}, fn::Function,
+	d1::DataMD, d2::DataRS{T2}, args...; kwargs...)
+	return broadcast(CT, fn, d1, DataF1(d2.sweep.v, d2.elem), args...; kwargs...)
+end
+
+#fn(DataRS, DataF1) - core: fn(DataF1, DataF1):
+function broadcast{TRS<:DF1_DRS}(CT::CastType2{DataF1,1,DataF1,2}, fn::Function,
+	d1::DataRS{TRS}, d2::DataF1, args...; kwargs...)
+	result = DataRS{eltype(fn, d1, d2)}(d1.sweep)
+	for i in 1:length(d1.sweep)
+		result.elem[i] = broadcast(CT, fn, d1.elem[i], d2, args...; kwargs...)
+	end
+	return result
+end
+#fn(DataF1, DataRS) - core: fn(DataF1, DataF1):
+function broadcast{TRS<:DF1_DRS}(CT::CastType2{DataF1,1,DataF1,2}, fn::Function,
+	d1::DataF1, d2::DataRS{TRS}, args...; kwargs...)
+	result = DataRS{eltype(fn, d1, d2)}(d2.sweep)
+	for i in 1:length(d2.sweep)
+		result.elem[i] = broadcast(CT, fn, d1, d2.elem[i], args...; kwargs...)
+	end
+	return result
+end
 #Last line
