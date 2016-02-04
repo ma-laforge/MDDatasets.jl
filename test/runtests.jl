@@ -18,6 +18,19 @@ println("\nShow physics constants:")
 println(sepline)
 MDDatasets.Physics.Constants._show()
 
+
+println("\nFormatting numeric outputs:")
+#-------------------------------------------------------------------------------
+println(sepline)
+dflt = FloatFormatter(ndigits=3) #Formats w/engineering notation
+SI = FloatFormatter(:SI, ndigits=5) #Formats w/SI prefixes
+
+for i in -30:30
+	v = 1.5656243243*10^Float64(i)
+	@show string(dflt(v)), v, string(SI(v))
+end
+
+
 println("\nTest basic operations on DataF1:")
 #-------------------------------------------------------------------------------
 println(sepline)
