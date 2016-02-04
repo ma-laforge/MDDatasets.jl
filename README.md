@@ -57,22 +57,22 @@ Thus, explicit looping over `DataHR` & `DataRS` structures is not typically requ
 
 #### Differential/Integral Math
 
- - **`deriv`**`(d::DataF1, shiftx=[T/F])`: Returns dataset with derivative of `d`
- - **`integ`**`(d::DataF1, shiftx=[T/F])`: Returns definite integral of `d`
- - **`iinteg`**`(d::DataF1, shiftx=[T/F])`: Returns dataset with indefinite integral of `d`
+ - **`deriv`**`(d::DataF1, shiftx=[Bool])`: Returns dataset with derivative of `d`
+ - **`integ`**`(d::DataF1, shiftx=[Bool])`: Returns definite integral of `d`
+ - **`iinteg`**`(d::DataF1, shiftx=[Bool])`: Returns dataset with indefinite integral of `d`
 
 #### Basic Dataset Operations
  - **`xval`**`(::DataF1)`: Returns a dataset with where y(x) = x.
- - **`value`**`(::DataF1, x=[XVALUE])`: Returns `y(XVALUE)`
+ - **`value`**`(y::DataF1, x=[Real])`: Returns `y(x)`
  - **`clip`**`()`: Returns a dataset clipped within an x-range
   - `clip(::DataF1, xrng::Range)`
-  - `clip(::DataF1, xmin=[MINVALUE], xmax=[MAXVALUE])`
+  - `clip(::DataF1, xmin=[Real], xmax=[Real])`
  - **`sample`**`(::DataF1, xrng::Range)`: Returns dataset sampled @ each point in `xrng`
  - **`xshift`**`(::DataF1, offset::Number)`: Returns dataset with all x-values shifted by +/-`offset`
  - **`xscale`**`(::DataF1, fact::Number)`: Returns dataset with all x-values scaled by `fact`
  - **`yvsx`**`(yv::DataF1, xv::DataF1)`: Returns dataset with `{xv(x), yv(x)}` (interpolating, when necessary)
 
-#### Cross-based Functions
+#### Cross-based Operations
 
 Note: The `Event` object makes functions return x-vectors that represent the current event number.
 
@@ -81,16 +81,21 @@ TODO: rename `tstart => xstart`
 <br>TODO: rename `xing1, xing2 => xref, xmain`
 
  - **`xcross`**`()`: Returns x-values of `d1` (up-to `nmax`) when `d1` crosses 0 (`nmax`=0: get all crossings):
-  - `xcross([Event,] d1::DataF1, [nmax::Int,] tstart=[TSTART], allow::CrossType=[XTYPE])`
+  - `xcross([Event,] d1::DataF1, [nmax::Int,] tstart=[Real], allow=[CrossType])`
  - **`ycross`**`()`: Returns y-values of `d2` (up-to `nmax`) when `d1` crosses `d2` (`nmax`=0: get all crossings):
-  - `ycross([Event,] d1::DataF1, d2::DataF1, [nmax::Int,] tstart=[TSTART], allow::CrossType=[XTYPE])`
+  - `ycross([Event,] d1::DataF1, d2::DataF1, [nmax::Int,] tstart=[Real], allow=[CrossType])`
  - **`xcross1`**`()`: Returns scalar x-value of `d1` on `n`-th zero-crossing:
-  - `xcross1([Event,] d1::DataF1, n=[NCROSSING], tstart=[TSTART], allow::CrossType=[XTYPE])`
+  - `xcross1([Event,] d1::DataF1, n=[Int], tstart=[Real], allow=[CrossType])`
  - **`ycross1`**`()`: Returns scalar y-value of `d1` on `n`-th crossing of `d1` & `d2`:
-  - `ycross1([Event,] d1::DataF1, n=[NCROSSING], tstart=[TSTART], allow::CrossType=[XTYPE])`
- - **`measdelay`**`(dref::DataF1, dmain::DataF1, nmax=[NMAX], tstart_ref=[TSTART_REF], tstart_main=[TSTART_MAIN], xing1::CrossType=[XTYPE_REF], xing2::CrossType=[XTYPE_MAIN])`
- - **`measperiod`**`(d::DataF1, nmax=[NMAX], tstart=[TSTART], xing::CrossType=[XTYPE], shiftx=[T/F])`
- - **`measfreq`**`(d::DataF1, nmax=[NMAX], tstart=[TSTART], xing::CrossType=[XTYPE], shiftx=[T/F])`
+  - `ycross1([Event,] d1::DataF1, n=[Int], tstart=[Real], allow=[CrossType])`
+
+##### Operations on Clock Signals
+ - **`measperiod`**`(d::DataF1, nmax=[Int], tstart=[Real], xing=[CrossType], shiftx=[Bool])`
+ - **`measfreq`**`(d::DataF1, nmax=[Int], tstart=[Real], xing=[CrossType], shiftx=[Bool])`
+
+##### Operations on Binary Signals
+ - **`measdelay`**`(dref::DataF1, dmain::DataF1, nmax=[Int], tstart_ref=[Real], tstart_main=[Real], xing1=[CrossType], xing2=[CrossType])`
+ - **`measck2q`**`(ck::DataF1, q::DataF1, delaymin=[Real], tstart_ck=[Real], tstart_q=[Real], xing_ck=[CrossType], xing_q=[CrossType])`
 
 ##### The `CrossType` Object
 
@@ -105,7 +110,7 @@ The `CrossType` object is used to filter out undersired events.
 Constructors:
 
  - **`CrossType`**: Indicates which crossings are allowed in the result.
-  - `CrossType(rise=[T/F], fall=[T/F], sing=[T/F], flat=[T/F], thru=[T/F], rev=[T/F], firstlast=[T/F])`
+  - `CrossType(rise=[Bool], fall=[Bool], sing=[Bool], flat=[Bool], thru=[Bool], rev=[Bool], firstlast=[Bool])`
   - `CrossType(:rise)`: Preset to selecting rising edges
   - `CrossType(:fall)`: Preset to selecting falling edges
   - `CrossType(:risefall)`: Preset to selecting both rising & falling edges
