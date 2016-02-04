@@ -32,6 +32,8 @@ include("base.jl")
 include("datahr.jl")
 include("datars.jl")
 include("datasetop.jl")
+include("meas_cross.jl")
+include("meas_binsignals.jl")
 include("broadcast.jl")
 include("broadcast_datahr.jl")
 include("broadcast_datars.jl")
@@ -107,6 +109,7 @@ export xcross, xcross1 #Measure x @ crossing events
 export ycross, ycross1 #Measure y @ crossing events
 export measdelay #Measure delay between crossing events of two signals
 export measperiod, measfreq
+export measck2q
 
 export meas #Use meas(:MEASTYPE, ...) to minimize namespace pollution.
 #==Sample usage:
