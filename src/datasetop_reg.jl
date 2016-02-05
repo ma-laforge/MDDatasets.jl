@@ -139,6 +139,7 @@ const _baseredfn1 = [:(Base.$fn) for fn in [
 	:maximum, :minimum, :minabs, :maxabs,
 	:prod, :sum,
 	:mean, :median, :middle,
+	:std, :var,
 ]]
 
 for fn in _baseredfn1; @eval begin #CODEGEN-------------------------------------
@@ -159,6 +160,7 @@ const _custfn1 = [
 	:xshift, :xscale,
 	:deriv, :integ, :iinteg,
 	:xcross, :measperiod, :measfreq,
+	:measck2q,
 ]
 
 for fn in _custfn1; @eval begin #CODEGEN---------------------------------------
@@ -185,6 +187,7 @@ end; end #CODEGEN---------------------------------------------------------------
 const _custfn2 = [
 	:yvsx,
 	:measdelay,
+	:measck2q,
 ]
 
 for fn in _custfn2; @eval begin #CODEGEN----------------------------------------
