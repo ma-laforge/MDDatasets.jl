@@ -72,7 +72,7 @@ export xval #Gets a dataset with all the x-values as the y-values
 #value(ds, x=value) (already exported): get y-value @ given x.
 export clip #clips a dataset within an xrange
 export sample #Samples a dataset
-export xshift, xscale
+export delta, xshift, xscale
 export yvsx
 export deriv, integ, iinteg #derivative, definite integral, indefinite integral
 
@@ -109,7 +109,7 @@ export CrossType #To filter out unwanted crossings
 export xcross, xcross1 #Measure x @ crossing events
 export ycross, ycross1 #Measure y @ crossing events
 export measdelay #Measure delay between crossing events of two signals
-export measperiod, measfreq
+export measperiod, measfreq, measduty, measckstats
 export measck2q, measskew
 
 export meas #Use meas(:MEASTYPE, ...) to minimize namespace pollution.

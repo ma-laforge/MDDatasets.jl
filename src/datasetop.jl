@@ -15,7 +15,7 @@ xval(d::DataF1) = DataF1(d.x, copy(d.x))
 #Element-by-element difference of y-values:
 #(shift x-values @ mean position)
 #-------------------------------------------------------------------------------
-function deltax(d::DataF1; shiftx=true)
+function delta(d::DataF1; shiftx=true)
 	x = shiftx? meanadj(d.x): d.x[1:end-1]
 	return DataF1(x, delta(d.y))
 end

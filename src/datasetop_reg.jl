@@ -20,7 +20,7 @@ _dotop(x)=Symbol(".$x")
 ===============================================================================#
 
 #Unary operators
-const _operators1 = Symbol[:-, :+]
+const _operators1 = Symbol[:-, :+, :!]
 
 for op in _operators1; @eval begin #CODEGEN--------------------------------------
 
@@ -35,7 +35,7 @@ Base.$op(d::DataMD) = broadcast(CAST_BASEOP1, Base.$op, d)
 
 end; end #CODEGEN---------------------------------------------------------------
 
-const _operators2 = Symbol[:-, :+, :/, :*]
+const _operators2 = Symbol[:-, :+, :/, :*, :>, :<, :>=, :<=, :!=, :(==)]
 
 for op in _operators2; @eval begin #CODEGEN--------------------------------------
 
@@ -157,9 +157,9 @@ end; end #CODEGEN---------------------------------------------------------------
 ===============================================================================#
 const _custfn1 = [
 	:clip, :xval, :sample,
-	:xshift, :xscale,
+	:delta, :xshift, :xscale,
 	:deriv, :integ, :iinteg,
-	:xcross, :measperiod, :measfreq,
+	:xcross, :measperiod, :measfreq, :measduty,
 	:measck2q,
 ]
 
@@ -211,8 +211,8 @@ ycross1(d1::DataMD, d2, args...; kwargs...) =
 measdelay(ds::DS, d1::DataMD, d2::DataMD, args...; kwargs...) =
 	broadcast(CastType(DataF1, 2, DataF1, 3), measdelay, ds, d1, d2, args...; kwargs...)
 xcross(ds::DS, d::DataMD, args...; kwargs...) =
-	broadcast(CastType(DataF1, 2), $fn, ds, d, args...; kwargs...)
+	broadcast(CastType(DataF1, 2), xcross, ds, d, args...; kwargs...)
 xcross1(ds::DS, d::DataMD, args...; kwargs...) =
-	broadcast(CastTypeRed(DataF1, 2), $fn, ds, d, args...; kwargs...)
+	broadcast(CastTypeRed(DataF1, 2), xcross1, ds, d, args...; kwargs...)
 
 #Last line
