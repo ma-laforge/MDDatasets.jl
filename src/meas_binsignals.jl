@@ -130,7 +130,7 @@ function _getskewstats(Δr::DataMD, Δf::DataMD)
 	Δmin = min(minimum(Δr), minimum(Δf))
 
 	#Use ASCII symbols to avoid issues with UTF8:
-	return Dict{Symbol, DataMD}(
+	return Dict{Symbol, Any}(
 		:mean_delrise => μΔr,
 		:min_delrise => minimum(Δr),
 		:max_delrise => maximum(Δr),
