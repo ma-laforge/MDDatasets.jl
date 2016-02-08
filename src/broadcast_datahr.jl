@@ -110,6 +110,9 @@ end
 ===============================================================================#
 #Broadcast data up to base sweep of two first arguments, then call fn
 function _broadcast{T}(::Type{T}, s::Vector{PSweep}, fn::Function, args...; kwargs...)
+	if length(s) < 1
+		return fn(args...; kwargs...)
+	end
 	bargs = Vector{Any}(length(args)) #Broadcasted version of args
 	for i in 1:length(args)
 		if typeof(args[i])<:DataMD
@@ -159,10 +162,7 @@ end
 
 #Find base sweep for a 1-argument broadcast
 #-------------------------------------------------------------------------------
-function fnbasesweep(fn::Function, d)
-	msg = "No signature found for $fn($t, ...)"
-	throw(ArgumentError(msg))
-end
+fnbasesweep(fn::Function, d) = PSweep[]
 fnbasesweep{T}(fn::Function, d::DataHR{T}) = d.sweeps
 
 #Ensure collection is composed of DataF1 (ex: DataHR{DataF1}):
@@ -177,8 +177,10 @@ ensure_coll_DataF1(fn::Function, d::DataHR) = DataHR{DataF1}(d)
 broadcast{T}(::CastType1{Number,1}, fn::Function, d::DataHR{T}, args...; kwargs...) =
 	_broadcast(T, fnbasesweep(fn, d), fn, d, args...; kwargs...)
 #Data reducing (DataHR{DataF1/Number})
-broadcast{T<:Number}(::CastTypeRed1{Number,1}, fn::Function, d::DataHR{T}, args...; kwargs...) =
+function broadcast{T<:Number}(::CastTypeRed1{Number,1}, fn::Function, d::DataHR{T}, args...; kwargs...)
+	d = ensure_coll_DataF1(fn, d) #Collapse DataHR{Number}  => DataHR{DataF1}
 	_broadcast(T, fnbasesweep(fn, d), fn, d, args...; kwargs...)
+end
 function broadcast(::CastTypeRed1{Number,1}, fn::Function, d::DataHR{DataF1}, args...; kwargs...)
 	TR = promote_type(findytypes(d.elem)...) #TODO: Better way?
 	_broadcast(TR, fnbasesweep(fn, d), fn, d, args...; kwargs...)

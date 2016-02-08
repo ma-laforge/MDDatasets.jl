@@ -33,8 +33,16 @@ call{T}(::Type{DataHR{T}}, sweeps::Vector{PSweep}) = DataHR{T}(sweeps, Array{T}(
 function call{T<:Number}(::Type{DataHR{DataF1}}, d::DataHR{T})
 	sweeps = d.sweeps[1:end-1]
 	x = d.sweeps[end].v
+
+	#Collapsed last sweep:
+	if length(sweeps) < 1
+		y = d.elem
+		return DataF1(x, reshape(y, length(y)))
+	end
+
+	#Reduced DataHR structure:
 	result = DataHR{DataF1}(sweeps) #Construct empty results
-	_sub = length(d.sweeps)>1?collect(subscripts(result)):[tuple()]
+	_sub = collect(subscripts(result))
 	for inds in _sub
 		y = d.elem[inds...,:]
 		result.elem[inds...] = DataF1(x, reshape(y, length(y)))
