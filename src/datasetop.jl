@@ -10,7 +10,11 @@
 
 #Obtain a dataset of the x-values
 #-------------------------------------------------------------------------------
-xval(d::DataF1) = DataF1(d.x, copy(d.x))
+xval(d::DataF1) = DataF1(d.x, copy(d.x)) #TODO: is copy necessary?  User should not modify
+
+xmax(d::DataF1) = maximum(d.x)
+xmin(d::DataF1) = minimum(d.x)
+
 
 #Element-by-element difference of y-values:
 #(shift x-values @ mean position)

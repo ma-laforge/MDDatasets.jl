@@ -57,6 +57,10 @@ export DataFloat, DataInt, DataComplex, DataF1 #Leaf data types
 export DataHR, DataRS
 export FloatFormatter
 
+#Scalar operations:
+#-------------------------------------------------------------------------------
+export sanitize #Clamp down infinite values & substitute NaNs
+
 #Accessor functions:
 #-------------------------------------------------------------------------------
 export value #High-collision WARNING: other modules probably want to export "value".
@@ -74,8 +78,8 @@ export clip #clips a dataset within an xrange
 export sample #Samples a dataset
 export delta, xshift, xscale
 export yvsx
-export deriv, integ, iinteg #derivative, definite integral, indefinite integral
-
+export deriv, iinteg #derivative, definite integral, indefinite integral
+export integ, xmin, xmax
 
 #Cross operations:
 #-------------------------------------------------------------------------------
@@ -111,6 +115,7 @@ export ycross, ycross1 #Measure y @ crossing events
 export measdelay #Measure delay between crossing events of two signals
 export measperiod, measfreq, measduty, measckstats
 export measck2q, measskew
+export measrise, measfall
 
 export meas #Use meas(:MEASTYPE, ...) to minimize namespace pollution.
 #==Sample usage:

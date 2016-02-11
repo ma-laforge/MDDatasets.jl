@@ -86,6 +86,15 @@ Base.promote_rule{T1<:DataF1, T2<:Number}(::Type{T1}, ::Type{T2}) = DataF1
 Base.promote_rule{TX1,TX2,TY1,TY2}(::Type{DataF1{TX1,TY1}},::Type{DataF1{TX2,TY2}}) =
 	DataF1{promote_type(TX1,TX2),promote_type(TY1,TY2)}
 
+#A way to ignore void types in promote operation:
+promote_type_nonvoid(T::Type) = T
+promote_type_nonvoid(::Type{Void}, ::Type{Void}) = Void
+promote_type_nonvoid(T1::Type, ::Type{Void}) = T1
+promote_type_nonvoid(::Type{Void}, T2::Type) = T2
+promote_type_nonvoid(T1::Type, T2::Type) = promote_type(T1,T2)
+promote_type_nonvoid(T1::Type, args...) =
+	promote_type_nonvoid(T1, promote_type_nonvoid(args...))
+
 
 #==Supported data types
 ===============================================================================#
@@ -141,6 +150,13 @@ function validate(d::DataF1)
 	validatelengths(d)
 	assertincreasingx(d)
 end
+
+
+#==Helper functions
+===============================================================================#
+#Substitute void values with default:
+substvoid(::Void, dflt) = dflt
+substvoid(v, dflt) = v
 
 
 #==Basic PSweep functionality (traits)

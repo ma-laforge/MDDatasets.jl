@@ -78,7 +78,6 @@ round
 ...
 
 #other
-#clamp: lo, hi
 #eachindex
 rand
 ==#
@@ -99,15 +98,21 @@ const _basefn1 = [:(Base.$fn) for fn in [
 	:sinpi, :cospi,
 	:sinc, :cosc, #cosc: d(sinc)/dx
 	:deg2rad, :rad2deg,
+	:clamp,
 ]]
 
-for fn in _basefn1; @eval begin #CODEGEN----------------------------------------
+#Custom functions of 1 argument that operate on base types:
+const _custbasefn1 = [
+	:sanitize,
+]
+
+for fn in vcat(_basefn1,_custbasefn1); @eval begin #CODEGEN---------------------
 
 #fn(DataF1)
-$fn(d::DataF1) = DataF1(d.x, $fn(d.y))
+$fn(d::DataF1, args...; kwargs...) = DataF1(d.x, $fn(d.y, args...; kwargs...))
 
 #Everything else:
-$fn(d::DataMD) = broadcast(CAST_BASEOP1, $fn, d)
+$fn(d::DataMD, args...; kwargs...) = broadcast(CAST_BASEOP1, $fn, d, args...; kwargs...)
 
 end; end #CODEGEN---------------------------------------------------------------
 
@@ -158,9 +163,9 @@ end; end #CODEGEN---------------------------------------------------------------
 const _custfn1 = [
 	:clip, :xval, :sample,
 	:delta, :xshift, :xscale,
-	:deriv, :integ, :iinteg,
+	:deriv, :iinteg,
 	:xcross, :measperiod, :measfreq, :measduty,
-	:measck2q,
+	:measck2q, :measrise, :measfall,
 ]
 
 for fn in _custfn1; @eval begin #CODEGEN---------------------------------------
@@ -172,7 +177,7 @@ end; end #CODEGEN---------------------------------------------------------------
 #Support reducing/collpasing funcitons of DataF1
 #-------------------------------------------------------------------------------
 const _custredfn1 = [
-	:xcross1,
+	:xcross1, :integ, :xmin, :xmax
 ]
 
 for fn in _custredfn1; @eval begin #CODEGEN-------------------------------------

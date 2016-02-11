@@ -122,6 +122,74 @@ function measck2q(q::DataF1, tsample::Real; delaymin::Real=0,
 	return _measck2q(xingck, xingq.x, delaymin)
 end
 
+#Measure rise/fall times of a signal
+#-------------------------------------------------------------------------------
+function measedgewidth(sig::DataF1, tstart::Real, thresh1::Real, thresh2::Real, cross::CrossType)
+	x1 = xveccross(sig-thresh1, 0, tstart, cross)
+	tstart = x1[1]
+	x2 = xveccross(sig-thresh2, 0, tstart, cross)
+	_inf = convert(eltype(x1), Inf)
+
+	n1 = length(x1)
+	n2 = length(x2)
+	y = similar(x1)
+
+	i2 = 1
+	x2i = x2[i2]
+	for i in 1:n1
+		x1i = x1[i]
+		while x2i < x1i
+			if i2 <= n2
+				x2i = x2[i2]
+				i2 += 1
+			else
+				x2i = _inf
+			end
+		end
+
+		y[i] = x2i - x1i
+	end
+	#Clamp rise events that failed to cross thresh2:
+	for i in 1:(n1-1)
+		Δ = x1[i+1] - x1[i]
+		if Δ < y[i]
+			y[i] = Δ
+		end
+	end
+	#Remove last point if infinite:
+	if isinf(y[end])
+		n1 -= 1
+		resize!(x1, n1)
+		resize!(y, n1)
+	end
+	return DataF1(x1, y)
+end
+
+function _measrise(sig::DataF1, tstart::Real, lthresh::Real, hthresh::Real)
+	return measedgewidth(sig, tstart, lthresh, hthresh, CrossType(:rise))
+end
+
+_measrise(sig::DataF1, tstart::Real, lthresh::Real, hthresh) =
+	throw("measrise: Must provide a real value for hthresh")
+_measrise(sig::DataF1, tstart::Real, lthresh, hthresh::Real) =
+	throw("measrise: Must provide a real value for lthresh")
+measrise(sig::DataF1; tstart::Real=-Inf, lthresh=nothing, hthresh=nothing) =
+	_measrise(sig, tstart, lthresh, hthresh)
+
+function _measfall(sig::DataF1, tstart::Real, lthresh::Real, hthresh::Real)
+	return measedgewidth(sig, tstart, hthresh, lthresh, CrossType(:fall))
+end
+
+_measfall(sig::DataF1, tstart::Real, lthresh::Real, hthresh) =
+	throw("measrise: Must provide a real value for hthresh")
+_measfall(sig::DataF1, tstart::Real, lthresh, hthresh::Real) =
+	throw("measrise: Must provide a real value for lthresh")
+measfall(sig::DataF1; tstart::Real=-Inf, lthresh=nothing, hthresh=nothing) =
+	_measfall(sig, tstart, lthresh, hthresh)
+
+
+#measskew: Measure skew statistics of a signal
+#-------------------------------------------------------------------------------
 function _getskewstats(Δr::DataMD, Δf::DataMD)
 	μΔr = mean(Δr)
 	μΔf = mean(Δf)
