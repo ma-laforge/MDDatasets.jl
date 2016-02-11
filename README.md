@@ -49,7 +49,7 @@ TODO: Provide a means to re-order dimensions.
 
  - **`DataInt, DataFloat, DataComplex`**: Useful aliases for largest practical data types on a platform (not yet platform dependent).
  - **`DataMD`**: Abastract data type for multi-dimensional data.
- - **`DataF1`**: Represens a function of 1 variable, y(x) using a x/y vector pair.
+ - **`DataF1`**: Represents a function of 1 variable, y(x) using a x/y vector pair.
  - **`DataHR{DataF1/DataInt/DataFloat/DataComplex}`**: A hyper-rectangular organizaton of data.  Principally designed to collect massive datasets with *independent* control variables ([see examples](#SampleUsage_DataHR)).
  - **`DataRS{DataF1/DataInt/DataFloat/DataComplex}`**: A recursive-sweep organization of data.  Principally designed to collect massive datasets with *dependent* control variables([see examples](#SampleUsage_DataRS)).
  - **`PSweep`**: A parameter sweep (i.e. an independent control variable that generates experimental points in a `DataHR` dataset).
