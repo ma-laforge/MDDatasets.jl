@@ -170,8 +170,8 @@ end
 #TODO: what about infinitiy? convert(Float32,NaN)
 #-------------------------------------------------------------------------------
 function xveccross{TX<:Number, TY<:Number}(d::DataF1{TX,TY}, nmax::Integer,
-	tstart::Real, allow::CrossType)
-	idx = icross(d, nmax, tstart, allow)
+	xstart::Real, allow::CrossType)
+	idx = icross(d, nmax, xstart, allow)
 	TR = typeof(one(promote_type(TX,TY))/2) #TODO: is there better way?
 	result = Vector{TR}(length(idx))
 	for i in 1:length(idx)
@@ -189,9 +189,9 @@ function xveccross{TX<:Number, TY<:Number}(d::DataF1{TX,TY}, nmax::Integer,
 end
 
 #-------------------------------------------------------------------------------
-function xcross(d::DataF1; nmax::Integer=0, tstart::Real=-Inf,
+function xcross(d::DataF1; nmax::Integer=0, xstart::Real=-Inf,
 	allow::CrossType=CrossType())
-	x = xveccross(d, nmax, tstart, allow)
+	x = xveccross(d, nmax, xstart, allow)
 	return DataF1(x, x)
 end
 function xcross(::DS{:event}, d::DataF1, args...; kwargs...)
@@ -201,10 +201,10 @@ end
 
 #xcross1: return a single crossing point (new name for type stability)
 #-------------------------------------------------------------------------------
-function xcross1(d::DataF1; n::Integer=1, tstart::Real=-Inf,
+function xcross1(d::DataF1; n::Integer=1, xstart::Real=-Inf,
 	allow::CrossType=CrossType())
 	n = max(n, 1)
-	x = xveccross(d, n, tstart, allow)
+	x = xveccross(d, n, xstart, allow)
 	if length(x) < n
 		return convert(eltype(x), NaN) #TODO: Will fail with int.  Use NA.
 	else
@@ -216,8 +216,8 @@ end
 #-------------------------------------------------------------------------------
 function ycross{TX<:Number, TY<:Number, T<:DF1_Num}(
 	d1::DataF1{TX,TY}, d2::T; nmax::Integer=0,
-	tstart::Real=-Inf, allow::CrossType=CrossType())
-	x = xveccross(d1-d2, nmax, tstart, allow)
+	xstart::Real=-Inf, allow::CrossType=CrossType())
+	x = xveccross(d1-d2, nmax, xstart, allow)
 	TR = typeof(one(promote_type(TX,TY))/2) #TODO: is there better way?
 	y = Vector{TR}(length(x))
 	for i in 1:length(x)
@@ -234,9 +234,9 @@ end
 #-------------------------------------------------------------------------------
 function ycross1{TX<:Number, TY<:Number, T<:DF1_Num}(
 	d1::DataF1{TX,TY}, d2::T; n::Integer=1,
-	tstart::Real=-Inf, allow::CrossType=CrossType())
+	xstart::Real=-Inf, allow::CrossType=CrossType())
 	n = max(n, 1)
-	x = xveccross(d1-d2, n, tstart, allow)
+	x = xveccross(d1-d2, n, xstart, allow)
 	TR = typeof(one(promote_type(TX,TY))/2) #TODO: is there better way?
 	if length(x) < n
 		return convert(TR, NaN) #TODO: Will fail with int.  Use NA.

@@ -47,4 +47,18 @@ function Base.showcompact(io::IO, p::Point2D)
 	print(io, "pt($(p.x), $(p.y))")
 end
 
+function Base.show(io::IO, x::CrossType)
+	proplist = ASCIIString[]
+	x.v&XINGTYPE_RISE != 0? push!(proplist, "rise"): nothing
+	x.v&XINGTYPE_FALL != 0? push!(proplist, "fall"): nothing
+	x.v&XINGTYPE_SING != 0? push!(proplist, "sing"): nothing
+	x.v&XINGTYPE_FLAT != 0? push!(proplist, "flat"): nothing
+	x.v&XINGTYPE_THRU != 0? push!(proplist, "thru"): nothing
+	x.v&XINGTYPE_REV != 0? push!(proplist, "rev"): nothing
+	x.v&XINGTYPE_FIRSTLAST != 0? push!(proplist, "firstlast"): nothing
+
+	print(io, "CrossType(", join(proplist, ", "), ")")
+end
+
+
 #Last line

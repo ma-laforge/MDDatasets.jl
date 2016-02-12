@@ -14,7 +14,7 @@
 function measperiod(d::DataF1; nmax::Integer=0, tstart::Real=-Inf,
 	xing::CrossType=CrossType(), shiftx=true)
 
-	dx = xcross(d, nmax=nmax, tstart=tstart, allow=xing)
+	dx = xcross(d, nmax=nmax, xstart=tstart, allow=xing)
 	return delta(dx, shiftx=shiftx)
 end
 
@@ -31,7 +31,7 @@ end
 #TODO: Improve: Could break in the presence of noise.
 #-------------------------------------------------------------------------------
 function measduty(d::DataF1; nmax::Integer=0, tstart::Real=-Inf, shiftx=true)
-	xrise1 = xcross1(d, tstart=tstart, allow=CrossType(:rise))
+	xrise1 = xcross1(d, xstart=tstart, allow=CrossType(:rise))
 	xrise = xveccross(d, nmax, tstart, CrossType(:rise))
 	xfall = xveccross(d, nmax, xrise1, CrossType(:fall))
 	#Need 1 more rise to get period
@@ -68,9 +68,9 @@ function measckstats(d::DataMD; tstart=-Inf, tck=nothing)
 		msg = "measckstats: Must provide value to tck."
 		throw(ArgumentError(msg))
 	end
-	xrise1 = xcross1(d, tstart=tstart, allow=CrossType(:rise))
-	xrise = xcross(Event, d, tstart=tstart, allow=CrossType(:rise))
-	xfall = xcross(Event, d, tstart=xrise1, allow=CrossType(:fall))
+	xrise1 = xcross1(d, xstart=tstart, allow=CrossType(:rise))
+	xrise = xcross(Event, d, xstart=tstart, allow=CrossType(:rise))
+	xfall = xcross(Event, d, xstart=xrise1, allow=CrossType(:fall))
 
 
 	#Want to match up rise/fall events:

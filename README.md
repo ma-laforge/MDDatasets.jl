@@ -105,25 +105,21 @@ TODO: Provide a means to re-order dimensions.
 
 Note: The `Event` object makes functions return x-vectors that represent the current event number.
 
-TODO: rename `tstart => xstart`
-<br>TODO: rename `tstart_ref, tstart_main => xstart_ref, xstart_main`
-<br>TODO: rename `xing1, xing2 => xref, xmain`
-
  - **`xcross`**`()`: Returns x-values of `d1` (up-to `nmax`) when `d1` crosses 0 (`nmax`=0: get all crossings):
-  - `xcross([Event,] d1::DataF1, [nmax::Int,] tstart=[Real], allow=[CrossType])`
+  - `xcross([Event,] d1::DataF1, [nmax::Int,] xstart=[Real], allow=[CrossType])`
  - **`ycross`**`()`: Returns y-values of `d2` (up-to `nmax`) when `d1` crosses `d2` (`nmax`=0: get all crossings):
-  - `ycross([Event,] d1::DataF1, d2::DataF1, [nmax::Int,] tstart=[Real], allow=[CrossType])`
+  - `ycross([Event,] d1::DataF1, d2::DataF1, [nmax::Int,] xstart=[Real], allow=[CrossType])`
  - **`xcross1`**`()`: Returns scalar x-value of `d1` on `n`-th zero-crossing:
-  - `xcross1([Event,] d1::DataF1, n=[Int], tstart=[Real], allow=[CrossType])`
+  - `xcross1([Event,] d1::DataF1, n=[Int], xstart=[Real], allow=[CrossType])`
  - **`ycross1`**`()`: Returns scalar y-value of `d1` on `n`-th crossing of `d1` & `d2`:
-  - `ycross1([Event,] d1::DataF1, n=[Int], tstart=[Real], allow=[CrossType])`
+  - `ycross1([Event,] d1::DataF1, n=[Int], xstart=[Real], allow=[CrossType])`
 
 ##### Operations On Clock Signals
  - **`measperiod`**`(d::DataF1, nmax=[Int], tstart=[Real], xing=[CrossType], shiftx=[Bool])`
  - **`measfreq`**`(d::DataF1, nmax=[Int], tstart=[Real], xing=[CrossType], shiftx=[Bool])`
 
 ##### Operations On Binary Signals
- - **`measdelay`**`(dref::DataF1, dmain::DataF1, nmax=[Int], tstart_ref=[Real], tstart_main=[Real], xing1=[CrossType], xing2=[CrossType])`
+ - **`measdelay`**`(dref::DataF1, dmain::DataF1, nmax=[Int], tstart_ref=[Real], tstart_main=[Real], xing_ref=[CrossType], xing_main=[CrossType])`
  - **`measck2q`**`(ck::DataF1, q::DataF1, delaymin=[Real], tstart_ck=[Real], tstart_q=[Real], xing_ck=[CrossType], xing_q=[CrossType])`
 
 ##### The `CrossType` Object

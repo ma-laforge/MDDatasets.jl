@@ -26,10 +26,10 @@ end
 #-------------------------------------------------------------------------------
 function measdelay(dref::DataF1, dmain::DataF1; nmax::Integer=0,
 	tstart_ref::Real=-Inf, tstart_main::Real=-Inf,
-	xing1::CrossType=CrossType(), xing2::CrossType=CrossType())
+	xing_ref::CrossType=CrossType(), xing_main::CrossType=CrossType())
 
-	xref = xcross(dref, nmax=nmax, tstart=tstart_ref, allow=xing1)
-	xmain = xcross(dmain, nmax=nmax, tstart=tstart_main, allow=xing2)
+	xref = xcross(dref, nmax=nmax, xstart=tstart_ref, allow=xing_ref)
+	xmain = xcross(dmain, nmax=nmax, xstart=tstart_main, allow=xing_main)
 	npts = min(length(xref), length(xmain))
 	delay = xmain.y[1:npts] - xref.y[1:npts]
 	x = xref.x[1:npts]
@@ -108,8 +108,8 @@ function measck2q(ck::DataF1, q::DataF1; delaymin::Real=0,
 	tstart_ck::Real=-Inf, tstart_q::Real=-Inf,
 	xing_ck::CrossType=CrossType(), xing_q::CrossType=CrossType())
 
-	xingck = xcross(ck, tstart=tstart_ck, allow=xing_ck)
-	xingq = xcross(q, tstart=tstart_q, allow=xing_q)
+	xingck = xcross(ck, xstart=tstart_ck, allow=xing_ck)
+	xingq = xcross(q, xstart=tstart_q, allow=xing_q)
 	return _measck2q(xingck.x, xingq.x, delaymin)
 end
 #Measure clock-to-Q delay an ideal sampling clock (tsample).
@@ -118,7 +118,7 @@ function measck2q(q::DataF1, tsample::Real; delaymin::Real=0,
 	xing_q::CrossType=CrossType())
 
 	xingck = _buildckvector("measck2q", tstart_ck, (q.x[end]+tsample), tsample)
-	xingq = xcross(q, tstart=tstart_q, allow=xing_q)
+	xingq = xcross(q, xstart=tstart_q, allow=xing_q)
 	return _measck2q(xingck, xingq.x, delaymin)
 end
 
@@ -221,9 +221,9 @@ function measskew(ref::DataMD, sig::DataMD;
 	xfall = CrossType(:fall)
 
 	Δr = measdelay(ref, sig, tstart_ref=tstart_ref, tstart_main=tstart_sig,
-		xing1=xrise, xing2=xrise)
+		xing_ref=xrise, xing_main=xrise)
 	Δf = measdelay(ref, sig, tstart_ref=tstart_ref, tstart_main=tstart_sig,
-		xing1=xfall, xing2=xfall)
+		xing_ref=xfall, xing_main=xfall)
 	return _getskewstats(Δr, Δf)
 end
 

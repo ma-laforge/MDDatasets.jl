@@ -14,4 +14,18 @@ function getkwarg(kwargs::Vector{Any}, s::Symbol)
 	end
 end
 
+#==Ensure interface (similar to assert)
+===============================================================================#
+#=Similar to assert.  However, unlike assert, "ensure" is not meant for
+debugging.  Thus, ensure is never meant to be compiled out.
+=#
+function ensure(cond::Bool, err)
+	if !cond; throw(err); end
+end
+
+#Conditionnally generate error using "do" syntax:
+function ensure(fn::Function, cond::Bool)
+	if !cond; throw(fn()); end
+end
+
 #Last line

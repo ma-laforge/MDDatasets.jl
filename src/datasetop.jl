@@ -1,6 +1,6 @@
 #MDDatasets: Dataset operations
 #TODO: optimize operations so they run faster
-#TODO: assert length(v)>1?
+#TODO: ensure length(v)>1?
 #TODO: add xaty?
 #-------------------------------------------------------------------------------
 
@@ -81,7 +81,7 @@ end
 #-------------------------------------------------------------------------------
 function clip{TX<:Number, TY<:Number}(d::DataF1{TX,TY}, rng::Limits1D{TX})
 	validate(d); #Expensive, but might avoid headaches
-	assertnotinverted(rng)
+	ensurenotinverted(rng)
 	if length(d) < 1; return d; end;
 
 	xmin = clamp(d.x[1], rng)
@@ -133,7 +133,7 @@ clip{TX<:Number, TY<:Number}(d::DataF1{TX,TY}, rng::Range) =
 
 #-------------------------------------------------------------------------------
 function sample{TX<:Number, TY<:Number}(d::DataF1{TX,TY}, x::Range)
-	validate(d); assertincreasingx(x); #Expensive, but might avoid headaches
+	validate(d); ensureincreasingx(x); #Expensive, but might avoid headaches
 	#TODO: deal with empty d
 	if length(x) < 1
 		return DataF1(zeros(eltype(x),0), zeros(eltype(d.y),0))

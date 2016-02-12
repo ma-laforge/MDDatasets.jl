@@ -52,6 +52,17 @@ println(sepline)
 @show DataRS(dhr)
 
 
+println("\nTest \"ensure\" system:")
+#-------------------------------------------------------------------------------
+println(sepline)
+try;
+	ensure(false) do
+		ArgumentError("Predicate failed.")
+	end
+	warn("Failed")
+catch e; info("Fail successful: ", e.msg); end
+
+
 #==
 println("\nTest value():")
 #Could be made into real test:

@@ -69,7 +69,7 @@ function findclosestindex(v::Vector, val)
 end
 
 #Create vector with data left-shifted by n (padded with 0s)
-function lshift(v::Vector, n::Int)
+function _lshift(v::Vector, n::Int)
 	@assert(n >= 0, "Cannot shfit by a negative number")
 	result = zeros(v)
 	for i in 1:(length(v)-n)
@@ -79,7 +79,7 @@ function lshift(v::Vector, n::Int)
 end
 
 #Create vector with data right-shifted by n (padded with 0s)
-function rshift(v::Vector, n::Int)
+function _rshift(v::Vector, n::Int)
 	@assert(n >= 0, "Cannot shfit by a negative number")
 	result = zeros(v)
 	for i in length(v):-1:(1+n)
@@ -91,9 +91,9 @@ end
 #Create vector with data shifted by +/-n (padded with 0s)
 function shift(v::Vector, n::Int)
 	if n >= 0
-		return rshift(v, n)
+		return _rshift(v, n)
 	else
-		return lshift(v, -n)
+		return _lshift(v, -n)
 	end
 end
 

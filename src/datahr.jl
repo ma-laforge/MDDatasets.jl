@@ -76,7 +76,7 @@ end
 #Returns the dimension corresponding to the given string:
 function dimension(::Type{DataHR}, sweeps::Vector{PSweep}, id::AbstractString)
 	dim = findfirst((s)->(id==s.id), sweeps)
-	@assert(dim>0, "Sweep not found: $id.")
+	ensure(dim>0, ArgumentError("Sweep not found: $id."))
 	return dim
 end
 dimension(d::DataHR, id::AbstractString) = dimension(DataHR, d.sweeps, id)

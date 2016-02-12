@@ -25,7 +25,7 @@ end
 #==Helper functions
 ===============================================================================#
 
-function assertuniqueids(s::Vector{PSweep})
+function ensureuniqueids(s::Vector{PSweep})
 	n = length(s)
 	for i in 1:n
 		for j in (i+1):n
@@ -52,7 +52,7 @@ basesweep(d1, d2::DataHR) = basesweep(d2.sweeps,d2)
 #Functions to map array dimensions when broadcasting up a DataHR dataset
 #-------------------------------------------------------------------------------
 function getmap(basesweep::Vector{PSweep}, subsweep::Vector{PSweep})
-	assertuniqueids(basesweep)
+	ensureuniqueids(basesweep)
 	result = SubscriptMap(length(basesweep), length(subsweep))
 	found = zeros(Bool, length(subsweep))
 	for i in 1:length(basesweep)

@@ -42,9 +42,9 @@ end
 type DataF1{TX<:Number, TY<:Number} <: LeafDS
 	x::Vector{TX}
 	y::Vector{TY}
-#==TODO: find a way to assert lengths:
+#==TODO: find a way to validate lengths:
 	function DataF1{TX<:Number, TY<:Number}(x::Vector{TX}, y::Vector{TY})
-		@assert(length(x)==length(y), "Invalid DataF1: x & y lengths do not match")
+		ensure(length(x)==length(y), "Invalid DataF1: x & y lengths do not match")
 		return new(x,y)
 	end
 ==#
@@ -58,13 +58,13 @@ function DataF1{TX<:Number}(x::Vector{TX}, y::Function)
 end
 
 function DataF1(x::Range, y::Function)
-	assertincreasingx(x)
+	ensureincreasingx(x)
 	return DataF1(collect(x), y)
 end
 
 #Build a DataF1 object from a x-value range (make y=x):
 function DataF1(x::Range)
-	assertincreasingx(x)
+	ensureincreasingx(x)
 	return DataF1(collect(x), collect(x))
 end
 
@@ -114,41 +114,47 @@ elemallowed(::Type{DataMD}, ::Type{DataF1}) = true
    -Would using DataScalar wrapper & <: LeafDS be better?==#
 
 
-#==Useful assertions
+#==Useful assertions/validations
 ===============================================================================#
 
 #Make sure two datasets have the same x-coordinates:
-function assertsamex(d1::DataF1, d2::DataF1)
-	@assert(d1.x==d2.x, "Operation currently only supported for the same x-data.")
+function ensuresamex(d1::DataF1, d2::DataF1)
+	ensure(d1.x==d2.x,
+		ArgumentError("Operation currently only supported for the same x-data."))
 end
 
 #WARNING: relatively expensive
-function assertincreasingx(d::DataF1)
-	@assert(isincreasing(d.x), "DataF1.x must be in increasing order.")
+function ensureincreasingx(d::DataF1)
+	ensure(isincreasing(d.x),
+		ArgumentError("DataF1.x must be in increasing order."))
 end
 
-function assertincreasingx(x::Range)
-	@assert(isincreasing(x), "Data must be ordered with increasing x")
+function ensureincreasingx(x::Range)
+	ensure(isincreasing(x),
+		ArgumentError("Data must be ordered with increasing x"))
 end
 
-function assertmultipoint(x::Limits1D)
-	@assert(x.min < x.max, "Limits1D: min must be smaller than max")
+function ensuremultipoint(x::Limits1D)
+	ensure(x.min < x.max,
+		ArgumentError("Limits1D: min must be smaller than max"))
 end
 
-function assertnotinverted(x::Limits1D)
-	@assert(x.min <= x.max, "Limits1D: max cannot be smaller than min")
+function ensurenotinverted(x::Limits1D)
+	ensure(x.min <= x.max,
+		ArgumentError("Limits1D: max cannot be smaller than min"))
 end
 
 
 #Validate data lengths:
 function validatelengths(d::DataF1)
-	@assert(length(d.x)==length(d.y), "Invalid DataF1: x & y lengths do not match.")
+	ensure(length(d.x)==length(d.y),
+		ArgumentError("Invalid DataF1: x & y lengths do not match."))
 end
 
 #Perform simple checks to validate data integrity
 function validate(d::DataF1)
 	validatelengths(d)
-	assertincreasingx(d)
+	ensureincreasingx(d)
 end
 
 
@@ -233,7 +239,7 @@ end
 ===============================================================================#
 
 function applydisjoint{TX<:Number, TY1<:Number, TY2<:Number}(fn::Function, d1::DataF1{TX,TY1}, d2::DataF1{TX,TY2})
-	@assert(false, "Currently no support for disjoint datasets")
+	ensure(false, ArgumentError("Currently no support for disjoint datasets"))
 end
 
 #Apply a function of two scalars to two DataF1 objects:
