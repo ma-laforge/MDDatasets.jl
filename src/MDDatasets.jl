@@ -40,7 +40,6 @@ include("broadcast_datahr.jl")
 include("broadcast_datars.jl")
 include("datasetop_reg.jl")
 include("measinterface.jl")
-include("formatting.jl")
 include("show.jl")
 
 #==TODO: Watch out for value() being exported by multiple modules...
@@ -55,7 +54,6 @@ export PSweep #Parameter sweep
 export Index #A way to identify parameters as array indicies
 export DataFloat, DataInt, DataComplex, DataF1 #Leaf data types
 export DataHR, DataRS
-export FloatFormatter
 
 #Support functions:
 #-------------------------------------------------------------------------------
