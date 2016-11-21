@@ -146,7 +146,8 @@ parameter(d::DataHR, id::String) = parameter(DataHR, d.sweeps, id)
 #==Dataset reductions
 ===============================================================================#
 
-#Like sub(A, inds...), but with DataHR:
+#Like getindex(A, inds...), but with DataHR:
+#TODO: Support array "view"s instead of copying with "getindex" for efficiency??
 function getsubarray{T}(d::DataHR{T}, inds...)
 	sweeps = PSweep[]
 	idx = 1
@@ -160,16 +161,16 @@ function getsubarray{T}(d::DataHR{T}, inds...)
 		end
 		idx +=1
 	end
-	return DataHR{T}(sweeps, reshape(sub(d.elem, inds...), size(DataHR, sweeps)))
+	return DataHR{T}(sweeps, reshape(getindex(d.elem, inds...), size(DataHR, sweeps)))
 end
 
-#sub(DataHR, inds...), using key/value pairs:
+#getindex(DataHR, inds...), using key/value pairs:
 function getsubarraykw{T}(d::DataHR{T}; kwargs...)
 	sweeps = PSweep[]
 	indlist = Vector{Int}[]
 	for sweep in d.sweeps
 		keepsweep = true
-		arg = getkwarg(kwargs, symbol(sweep.id))
+		arg = getkwarg(kwargs, Symbol(sweep.id))
 		if arg != nothing
 			inds = indices(sweep, arg)
 			push!(indlist, inds)
@@ -182,7 +183,7 @@ function getsubarraykw{T}(d::DataHR{T}; kwargs...)
 			push!(sweeps, sweep)
 		end
 	end
-	return DataHR{T}(sweeps, reshape(sub(d.elem, indlist...), size(DataHR, sweeps)))
+	return DataHR{T}(sweeps, reshape(getindex(d.elem, indlist...), size(DataHR, sweeps)))
 end
 
 function Base.sub{T}(d::DataHR{T}, args...; kwargs...)
