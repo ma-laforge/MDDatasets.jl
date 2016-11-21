@@ -31,7 +31,7 @@ Base.$op(i::Index) = Index($op(i.v))
 Base.$op(d::DataF1) = DataF1(d.x, $op(d.y))
 
 #Everything else:
-Base.$op(d::DataMD) = broadcast(CAST_BASEOP1, Base.$op, d)
+Base.$op(d::DataMD) = broadcastMD(CAST_BASEOP1, Base.$op, d)
 
 end; end #CODEGEN---------------------------------------------------------------
 
@@ -52,9 +52,9 @@ Base.$op(d::DataF1, n::Number) = DataF1(d.x, $(_dotop(op))(d.y, n))
 Base.$op(n::Number, d::DataF1) = DataF1(d.x, $(_dotop(op))(n, d.y))
 
 #Everything else:
-Base.$op(d1::DataMD, d2::DataMD) = broadcast(CAST_BASEOP2, Base.$op, d1, d2)
-Base.$op(d1::Number, d2::DataMD) = broadcast(CAST_BASEOP2, Base.$op, d1, d2)
-Base.$op(d1::DataMD, d2::Number) = broadcast(CAST_BASEOP2, Base.$op, d1, d2)
+Base.$op(d1::DataMD, d2::DataMD) = broadcastMD(CAST_BASEOP2, Base.$op, d1, d2)
+Base.$op(d1::Number, d2::DataMD) = broadcastMD(CAST_BASEOP2, Base.$op, d1, d2)
+Base.$op(d1::DataMD, d2::Number) = broadcastMD(CAST_BASEOP2, Base.$op, d1, d2)
 
 end; end #CODEGEN---------------------------------------------------------------
 
@@ -112,7 +112,7 @@ for fn in vcat(_basefn1,_custbasefn1); @eval begin #CODEGEN---------------------
 $fn(d::DataF1, args...; kwargs...) = DataF1(d.x, $fn(d.y, args...; kwargs...))
 
 #Everything else:
-$fn(d::DataMD, args...; kwargs...) = broadcast(CAST_BASEOP1, $fn, d, args...; kwargs...)
+$fn(d::DataMD, args...; kwargs...) = broadcastMD(CAST_BASEOP1, $fn, d, args...; kwargs...)
 
 end; end #CODEGEN---------------------------------------------------------------
 
@@ -131,9 +131,9 @@ for fn in _basefn2; @eval begin #CODEGEN----------------------------------------
 $fn(d1::DataF1, d2::DataF1) = apply($fn, d1, d2)
 
 #Everything else:
-$fn(d1::DataMD, d2::DataMD) = broadcast(CAST_BASEOP2, $fn, d1, d2)
-$fn(d1::Number, d2::DataMD) = broadcast(CAST_BASEOP2, $fn, d1, d2)
-$fn(d1::DataMD, d2::Number) = broadcast(CAST_BASEOP2, $fn, d1, d2)
+$fn(d1::DataMD, d2::DataMD) = broadcastMD(CAST_BASEOP2, $fn, d1, d2)
+$fn(d1::Number, d2::DataMD) = broadcastMD(CAST_BASEOP2, $fn, d1, d2)
+$fn(d1::DataMD, d2::Number) = broadcastMD(CAST_BASEOP2, $fn, d1, d2)
 
 end; end #CODEGEN---------------------------------------------------------------
 
@@ -153,7 +153,7 @@ for fn in _baseredfn1; @eval begin #CODEGEN-------------------------------------
 $fn(d::DataF1) = $fn(d.y)
 
 #Everything else:
-$fn(d::DataMD) = broadcast(CAST_BASEOPRED1, $fn, d)
+$fn(d::DataMD) = broadcastMD(CAST_BASEOPRED1, $fn, d)
 
 end; end #CODEGEN---------------------------------------------------------------
 
@@ -170,7 +170,7 @@ const _custfn1 = [
 
 for fn in _custfn1; @eval begin #CODEGEN---------------------------------------
 
-$fn(d::DataMD, args...; kwargs...) = broadcast(CAST_MD1, $fn, d, args...; kwargs...)
+$fn(d::DataMD, args...; kwargs...) = broadcastMD(CAST_MD1, $fn, d, args...; kwargs...)
 
 end; end #CODEGEN---------------------------------------------------------------
 
@@ -182,7 +182,7 @@ const _custredfn1 = [
 
 for fn in _custredfn1; @eval begin #CODEGEN-------------------------------------
 
-$fn(d::DataMD, args...; kwargs...) = broadcast(CAST_MDRED1, $fn, d, args...; kwargs...)
+$fn(d::DataMD, args...; kwargs...) = broadcastMD(CAST_MDRED1, $fn, d, args...; kwargs...)
 
 end; end #CODEGEN---------------------------------------------------------------
 
@@ -198,7 +198,7 @@ const _custfn2 = [
 for fn in _custfn2; @eval begin #CODEGEN----------------------------------------
 
 $fn(d1::DataMD, d2::DataMD, args...; kwargs...) =
-	broadcast(CAST_MD2, $fn, d1, d2, args...; kwargs...)
+	broadcastMD(CAST_MD2, $fn, d1, d2, args...; kwargs...)
 
 end; end #CODEGEN---------------------------------------------------------------
 
@@ -207,17 +207,17 @@ end; end #CODEGEN---------------------------------------------------------------
 #2nd argument does not have to be DataMD:
 #-------------------------------------------------------------------------------
 ycross(d1::DataMD, d2, args...; kwargs...) =
-	broadcast(CastType(DataF1, 1, Number, 2), ycross, d1, d2, args...; kwargs...)
+	broadcastMD(CastType(DataF1, 1, Number, 2), ycross, d1, d2, args...; kwargs...)
 ycross1(d1::DataMD, d2, args...; kwargs...) =
-	broadcast(CastTypeRed(DataF1, 1, Number, 2), ycross1, d1, d2, args...; kwargs...)
+	broadcastMD(CastTypeRed(DataF1, 1, Number, 2), ycross1, d1, d2, args...; kwargs...)
 
 #First argument is ::DS{}
 #-------------------------------------------------------------------------------
 measdelay(ds::DS, d1::DataMD, d2::DataMD, args...; kwargs...) =
-	broadcast(CastType(DataF1, 2, DataF1, 3), measdelay, ds, d1, d2, args...; kwargs...)
+	broadcastMD(CastType(DataF1, 2, DataF1, 3), measdelay, ds, d1, d2, args...; kwargs...)
 xcross(ds::DS, d::DataMD, args...; kwargs...) =
-	broadcast(CastType(DataF1, 2), xcross, ds, d, args...; kwargs...)
+	broadcastMD(CastType(DataF1, 2), xcross, ds, d, args...; kwargs...)
 xcross1(ds::DS, d::DataMD, args...; kwargs...) =
-	broadcast(CastTypeRed(DataF1, 2), xcross1, ds, d, args...; kwargs...)
+	broadcastMD(CastTypeRed(DataF1, 2), xcross1, ds, d, args...; kwargs...)
 
 #Last line

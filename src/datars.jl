@@ -27,7 +27,7 @@ elemallowed(::Type{DataRS}, ::Type{DataRS}) = true #Also allow recursive structu
 DataRS{T}(sweep::PSweep, elem::Vector{T}) = DataRS{T}(sweep, elem)
 
 #Generate empty DataRS structure:
-call{T}(::Type{DataRS{T}}, sweep::PSweep) = DataRS{T}(sweep, Array(T, length(sweep)))
+(::Type{DataRS{T}}){T}(sweep::PSweep) = DataRS{T}(sweep, Array(T, length(sweep)))
 
 
 #==Type promotions
@@ -58,7 +58,7 @@ Base.fill(fn::Function, ::Type{DataRS}, sweep::PSweep) = fill(fn, DataRS{DataRS}
 
 #==Data generation
 ===============================================================================#
-function _ensuresweepunique(d::DataRS, sweepid::AbstractString)
+function _ensuresweepunique(d::DataRS, sweepid::String)
 	if sweepid == d.sweep.id
 		msg = "Sweep occurs multiple times in DataRS: $sweepid"
 		throw(ArgumentError(msg))
@@ -70,21 +70,21 @@ end
 #-------------------------------------------------------------------------------
 
 #Deal with non-leaf elements, once the sweep value is found:
-function _parameter{T}(d::DataRS{DataRS}, sweepid::AbstractString, sweepval::T)
+function _parameter{T}(d::DataRS{DataRS}, sweepid::String, sweepval::T)
 	_ensuresweepunique(d, sweepid)
 	elem = DataRS[_parameter(d.elem[i], sweepid, sweepval) for i in 1:length(d.sweep)]
 	return DataRS(d.sweep, elem)
 end
 
 #Deal with leaf elements, once the sweep value is found:
-function _parameter{T}(d::DataRS, sweepid::AbstractString, sweepval::T)
+function _parameter{T}(d::DataRS, sweepid::String, sweepval::T)
 	_ensuresweepunique(d, sweepid)
 	elem = T[sweepval for i in 1:length(d.sweep)]
 	return DataRS(d.sweep, elem)
 end
 
 #Main "parameter" algorithm (non-leaf elements):
-function parameter(d::DataRS{DataRS}, sweepid::AbstractString)
+function parameter(d::DataRS{DataRS}, sweepid::String)
 	if sweepid == d.sweep.id #Sweep found
 		elem = DataRS[_parameter(d.elem[i], sweepid, d.sweep.v[i]) for i in 1:length(d.sweep)]
 	else
@@ -93,7 +93,7 @@ function parameter(d::DataRS{DataRS}, sweepid::AbstractString)
 	return DataRS(d.sweep, elem)
 end
 #Main "parameter" algorithm (leaf elements):
-function parameter(d::DataRS, sweepid::AbstractString)
+function parameter(d::DataRS, sweepid::String)
 	T = eltype(d.sweep.v)
 	if sweepid == d.sweep.id #Sweep found
 		return DataRS(d.sweep, d.sweep.v)
@@ -131,7 +131,7 @@ end
 ===============================================================================#
 
 #Print leaf element:
-function printDataRSelem(io::IO, ds::DataRS, idx::Int, indent::AbstractString)
+function printDataRSelem(io::IO, ds::DataRS, idx::Int, indent::String)
 	if isdefined(ds.elem, idx)
 		println(io, ds.elem[idx])
 	else
@@ -139,7 +139,7 @@ function printDataRSelem(io::IO, ds::DataRS, idx::Int, indent::AbstractString)
 	end
 end
 #Print next level of recursive DataRS:
-function printDataRSelem{T<:DataRS}(io::IO, ds::DataRS{T}, idx::Int, indent::AbstractString)
+function printDataRSelem{T<:DataRS}(io::IO, ds::DataRS{T}, idx::Int, indent::String)
 	println(io)
 	if isdefined(ds.elem, idx)
 		printDataRS(io, ds.elem[idx], indent)
@@ -148,7 +148,7 @@ function printDataRSelem{T<:DataRS}(io::IO, ds::DataRS{T}, idx::Int, indent::Abs
 	end
 end
 #Print DataRS structure:
-function printDataRS(io::IO, ds::DataRS, indent::AbstractString)
+function printDataRS(io::IO, ds::DataRS, indent::String)
 	for i in 1:length(ds.elem)
 		print(io, "$indent", ds.sweep.id, "=", ds.sweep.v[i], ": ")
 		printDataRSelem(io, ds, i, "$indent  ")

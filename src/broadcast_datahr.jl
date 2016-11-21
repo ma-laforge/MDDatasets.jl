@@ -81,21 +81,21 @@ end
 
 #==Broadcasting data up-to a given sweep dimension
 ===============================================================================#
-function broadcast{T<:Number}(s::Vector{PSweep}, d::T)
+function broadcastMD{T<:Number}(s::Vector{PSweep}, d::T)
 	result = DataHR{T}(s)
 	for i in 1:length(result.elem)
 		result.elem[i] = d
 	end
 	return result
 end
-function broadcast(s::Vector{PSweep}, d::DataF1)
+function broadcastMD(s::Vector{PSweep}, d::DataF1)
 	result = DataHR{DataF1}(s)
 	for i in 1:length(result.elem)
 		result.elem[i] = d
 	end
 	return result
 end
-function broadcast{T}(s::Vector{PSweep}, d::DataHR{T})
+function broadcastMD{T}(s::Vector{PSweep}, d::DataHR{T})
 	if s == d.sweeps; return d; end
 	_map = getmap(s, d.sweeps)
 	result = DataHR{T}(s)
@@ -116,7 +116,7 @@ function _broadcast{T}(::Type{T}, s::Vector{PSweep}, fn::Function, args...; kwar
 	bargs = Vector{Any}(length(args)) #Broadcasted version of args
 	for i in 1:length(args)
 		if typeof(args[i])<:DataMD
-			bargs[i] = broadcast(s, args[i])
+			bargs[i] = broadcastMD(s, args[i])
 		else
 			bargs[i] = args[i]
 		end
@@ -125,7 +125,7 @@ function _broadcast{T}(::Type{T}, s::Vector{PSweep}, fn::Function, args...; kwar
 	for i in 1:length(kwargs)
 		(k,v) = kwargs[i]
 		if typeof(v)<:DataMD
-			bkwargs[i] = tuple(k, broadcast(s, v))
+			bkwargs[i] = tuple(k, broadcastMD(s, v))
 		else
 			bkwargs[i] = kwargs[i]
 		end
@@ -155,12 +155,12 @@ function _broadcast{T}(::Type{T}, s::Vector{PSweep}, fn::Function, args...; kwar
 end
 
 #Trap to provide more useful message:
-function broadcast(ct::CastType, fn::Function, args...; kwargs...)
+function broadcastMD(ct::CastType, fn::Function, args...; kwargs...)
 	msg = "Cast type not supported for call to $fn: $ct"
 	throw(ArgumentError(msg))
 end
 
-#Find base sweep for a 1-argument broadcast
+#Find base sweep for a 1-argument broadcastMD
 #-------------------------------------------------------------------------------
 fnbasesweep(fn::Function, d) = PSweep[]
 fnbasesweep{T}(fn::Function, d::DataHR{T}) = d.sweeps
@@ -174,14 +174,14 @@ ensure_coll_DataF1(fn::Function, d::DataHR) = DataHR{DataF1}(d)
 #Broadcast functions capable of operating directly on 1 base type (Number):
 #-------------------------------------------------------------------------------
 #DataHR{DataF1/Number}
-broadcast{T}(::CastType1{Number,1}, fn::Function, d::DataHR{T}, args...; kwargs...) =
+broadcastMD{T}(::CastType1{Number,1}, fn::Function, d::DataHR{T}, args...; kwargs...) =
 	_broadcast(T, fnbasesweep(fn, d), fn, d, args...; kwargs...)
 #Data reducing (DataHR{DataF1/Number})
-function broadcast{T<:Number}(::CastTypeRed1{Number,1}, fn::Function, d::DataHR{T}, args...; kwargs...)
+function broadcastMD{T<:Number}(::CastTypeRed1{Number,1}, fn::Function, d::DataHR{T}, args...; kwargs...)
 	d = ensure_coll_DataF1(fn, d) #Collapse DataHR{Number}  => DataHR{DataF1}
 	_broadcast(T, fnbasesweep(fn, d), fn, d, args...; kwargs...)
 end
-function broadcast(::CastTypeRed1{Number,1}, fn::Function, d::DataHR{DataF1}, args...; kwargs...)
+function broadcastMD(::CastTypeRed1{Number,1}, fn::Function, d::DataHR{DataF1}, args...; kwargs...)
 	TR = promote_type(findytypes(d.elem)...) #TODO: Better way?
 	_broadcast(TR, fnbasesweep(fn, d), fn, d, args...; kwargs...)
 end
@@ -190,17 +190,17 @@ end
 #-------------------------------------------------------------------------------
 #TODO: These signatures come in conflict with what is needed for DataRS
 #DataF1
-function broadcast(::CastType1{DataF1,1}, fn::Function, d, args...; kwargs...)
+function broadcastMD(::CastType1{DataF1,1}, fn::Function, d, args...; kwargs...)
 	d = ensure_coll_DataF1(fn, d) #Collapse DataHR{Number}  => DataHR{DataF1}
 	_broadcast(DataF1, fnbasesweep(fn, d), fn, d, args...; kwargs...)
 end
 #Expects DataF1 @ arg #2:
-function broadcast(::CastType1{DataF1,2}, fn::Function, dany1, d, args...; kwargs...)
+function broadcastMD(::CastType1{DataF1,2}, fn::Function, dany1, d, args...; kwargs...)
 	d = ensure_coll_DataF1(fn, d) #Collapse DataHR{Number}  => DataHR{DataF1}
 	_broadcast(DataF1, fnbasesweep(fn, d), fn, dany1, d, args...; kwargs...)
 end
 #Data reducing (DataF1)
-function broadcast(::CastTypeRed1{DataF1,1}, fn::Function, d, args...; kwargs...)
+function broadcastMD(::CastTypeRed1{DataF1,1}, fn::Function, d, args...; kwargs...)
 	d = ensure_coll_DataF1(fn, d) #Collapse DataHR{Number}  => DataHR{DataF1}
 	TR = promote_type(findytypes(d.elem)...) #TODO: Better way?
 	_broadcast(TR, fnbasesweep(fn, d), fn, d, args...; kwargs...)
@@ -238,17 +238,17 @@ end
 #Broadcast functions capable of operating directly on base types (Number, Number):
 #-------------------------------------------------------------------------------
 #DataHR{DataF1/Number} & DataHR{DataF1/Number}:
-function broadcast{T1,T2}(::CastType2{Number,1,Number,2}, fn::Function,
+function broadcastMD{T1,T2}(::CastType2{Number,1,Number,2}, fn::Function,
 	d1::DataHR{T1}, d2::DataHR{T2}, args...; kwargs...)
 	_broadcast(promote_type(T1,T2), fnbasesweep(fn, d1, d2), fn, d1, d2, args...; kwargs...)
 end
 #DataHR{DataF1/Number} & DataF1/Number:
-function broadcast{T1,T2<:DF1_Num}(::CastType2{Number,1,Number,2}, fn::Function,
+function broadcastMD{T1,T2<:DF1_Num}(::CastType2{Number,1,Number,2}, fn::Function,
 	d1::DataHR{T1}, d2::T2, args...; kwargs...)
 	_broadcast(promote_type(T1,T2), fnbasesweep(fn, d1, d2), fn, d1, d2, args...; kwargs...)
 end
 #DataF1/Number & DataHR{DataF1/Number}:
-function broadcast{T1<:DF1_Num,T2}(::CastType2{Number,1,Number,2}, fn::Function,
+function broadcastMD{T1<:DF1_Num,T2}(::CastType2{Number,1,Number,2}, fn::Function,
 	d1::T1, d2::DataHR{T2}, args...; kwargs...)
 	_broadcast(promote_type(T1,T2), fnbasesweep(fn, d1, d2), fn, d1, d2, args...; kwargs...)
 end
@@ -256,25 +256,25 @@ end
 #Broadcast functions capable of operating only on a dataF1 value:
 #-------------------------------------------------------------------------------
 #DataF1, DataF1
-function broadcast(::CastType2{DataF1,1,DataF1,2}, fn::Function, d1, d2, args...; kwargs...)
+function broadcastMD(::CastType2{DataF1,1,DataF1,2}, fn::Function, d1, d2, args...; kwargs...)
 	(d1, d2) = ensure_coll_DataF1(fn, d1, d2) #Collapse DataHR{Number}  => DataHR{DataF1}
 	_broadcast(DataF1, fnbasesweep(fn, d1, d2), fn, d1, d2, args...; kwargs...)
 end
 #DataF1, DataF1 @ arg 2/3:
-function broadcast(::CastType2{DataF1,2,DataF1,3}, fn::Function, dany1, d1, d2, args...; kwargs...)
+function broadcastMD(::CastType2{DataF1,2,DataF1,3}, fn::Function, dany1, d1, d2, args...; kwargs...)
 	(d1, d2) = ensure_coll_DataF1(fn, d1, d2) #Collapse DataHR{Number}  => DataHR{DataF1}
 	_broadcast(DataF1, fnbasesweep(fn, d1, d2), fn, dany1, d1, d2, args...; kwargs...)
 end
 #Data reducing (DataF1, DataF1)
-function broadcast(::CastTypeRed2{DataF1,1,DataF1,2}, fn::Function, d1, d2, args...; kwargs...)
+function broadcastMD(::CastTypeRed2{DataF1,1,DataF1,2}, fn::Function, d1, d2, args...; kwargs...)
 	(d1, d2) = ensure_coll_DataF1(fn, d1, d2) #Collapse DataHR{Number}  => DataHR{DataF1}
 	TR = promote_type(findytypes(d1.elem)...,findytypes(d2.elem)...) #TODO: Better way?
 	_broadcast(DataF1, fnbasesweep(fn, d1, d2), fn, d1, d2, args...; kwargs...)
 end
 
-#More custom broadcast functions
+#More custom broadcastMD functions
 #-------------------------------------------------------------------------------
-function broadcast(::CastType2{DataF1,1,Number,2}, fn::Function, d1, d2, args...; kwargs...)
+function broadcastMD(::CastType2{DataF1,1,Number,2}, fn::Function, d1, d2, args...; kwargs...)
 	d1 = ensure_coll_DataF1(fn, d1) #Collapse DataHR{Number}  => DataHR{DataF1}
 	TR = promote_type(findytypes(d1.elem)...,eltype(d2)) #TODO: Better way?
 	_broadcast(DataF1, fnbasesweep(fn, d1, d2), fn, d1, d2, args...; kwargs...)

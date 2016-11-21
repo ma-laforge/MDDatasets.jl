@@ -25,10 +25,10 @@ Limits1D(;min=nothing, max=nothing) = Limits1D(min, max)
 Limits1D(r::Range) = Limits1D(minimum(r), maximum(r)) #TODO: is it preferable to use rng[1/end]?
 
 #Constructor with forced type (Limits1D{Float32}(min=4)):
-call{T<:Number}(::Type{Limits1D{T}}, min::Number, ::Void) = Limits1D{T}(convert(T, min), typemax(T))
-call{T<:Number}(::Type{Limits1D{T}}, ::Void, max::Number) = Limits1D{T}(typemin(T), convert(T, max))
-call{T<:Number}(::Type{Limits1D{T}} ;min=nothing, max=nothing) = Limits1D{T}(min, max)
-call{T<:Number}(::Type{Limits1D{T}}, r::Range) = Limits1D{T}(convert(T,minimum(r)), convert(T,maximum(r)))
+(::Type{Limits1D{T}}){T<:Number}(min::Number, ::Void) = Limits1D{T}(convert(T, min), typemax(T))
+(::Type{Limits1D{T}}){T<:Number}(::Void, max::Number) = Limits1D{T}(typemin(T), convert(T, max))
+(::Type{Limits1D{T}}){T<:Number}(;min=nothing, max=nothing) = Limits1D{T}(min, max)
+(::Type{Limits1D{T}}){T<:Number}(r::Range) = Limits1D{T}(convert(T,minimum(r)), convert(T,maximum(r)))
 
 
 #==Enhance base functions

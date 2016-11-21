@@ -48,7 +48,7 @@ function Base.showcompact(io::IO, p::Point2D)
 end
 
 function Base.show(io::IO, x::CrossType)
-	proplist = ASCIIString[]
+	proplist = String[]
 	x.v&XINGTYPE_RISE != 0? push!(proplist, "rise"): nothing
 	x.v&XINGTYPE_FALL != 0? push!(proplist, "fall"): nothing
 	x.v&XINGTYPE_SING != 0? push!(proplist, "sing"): nothing

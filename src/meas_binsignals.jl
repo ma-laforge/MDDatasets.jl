@@ -9,7 +9,7 @@
 #==Helper functions
 ===============================================================================#
 
-function _buildckvector(ctx::ASCIIString, tstart::Real, tstop::Real, tsample::Real)
+function _buildckvector(ctx::String, tstart::Real, tstop::Real, tsample::Real)
 	if isinf(tstart)
 		msg = "$ctx: Must specify finite clock start time."
 		throw(ArgumentError(msg))

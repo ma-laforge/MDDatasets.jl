@@ -25,12 +25,12 @@ end
 DataHR{T,N}(sweeps::Vector{PSweep}, a::Array{T,N}) = DataHR{T}(sweeps, a)
 
 #Construct DataHR from Vector{PSweep}:
-call{T}(::Type{DataHR{T}}, sweeps::Vector{PSweep}) = DataHR{T}(sweeps, Array{T}(size(DataHR, sweeps)...))
+(::Type{DataHR{T}}){T}(sweeps::Vector{PSweep}) = DataHR{T}(sweeps, Array{T}(size(DataHR, sweeps)...))
 
 #Construct DataHR{DataF1} from DataHR{Number}
 #Collapse inner-most sweep (last dimension), by default:
 #TODO: use convert(...) instead?
-function call{T<:Number}(::Type{DataHR{DataF1}}, d::DataHR{T})
+function (::Type{DataHR{DataF1}}){T<:Number}(d::DataHR{T})
 	sweeps = d.sweeps[1:end-1]
 	x = d.sweeps[end].v
 
@@ -51,7 +51,7 @@ function call{T<:Number}(::Type{DataHR{DataF1}}, d::DataHR{T})
 end
 
 #Relay function, so people can blindly convert to DataHR{DataF1} using any DataHR:
-call(::Type{DataHR{DataF1}}, d::DataHR{DataF1}) = d
+(::Type{DataHR{DataF1}})(d::DataHR{DataF1}) = d
 
 
 #==Type promotions
@@ -74,12 +74,12 @@ function Base.size(::Type{DataHR}, sweeps::Vector{PSweep})
 end
 
 #Returns the dimension corresponding to the given string:
-function dimension(::Type{DataHR}, sweeps::Vector{PSweep}, id::AbstractString)
+function dimension(::Type{DataHR}, sweeps::Vector{PSweep}, id::String)
 	dim = findfirst((s)->(id==s.id), sweeps)
 	ensure(dim>0, ArgumentError("Sweep not found: $id."))
 	return dim
 end
-dimension(d::DataHR, id::AbstractString) = dimension(DataHR, d.sweeps, id)
+dimension(d::DataHR, id::String) = dimension(DataHR, d.sweeps, id)
 
 #Returns an element subscripts iterator for a DataHR corresponding to Vector{PSweep}.
 function subscripts(::Type{DataHR}, sweeps::Vector{PSweep})
@@ -96,7 +96,7 @@ Base.ndims(d::DataHR) = ndims(DataHR, d.sweeps)
 #-------------------------------------------------------------------------------
 sweeps(d::DataHR) = d.sweeps
 sweep(d::DataHR, dim::Int) = d.sweeps[dim].v
-sweep(d::DataHR, dim::AbstractString) = d.sweeps[dim].v
+sweep(d::DataHR, dim::String) = d.sweeps[dim].v
 
 #Returns parameter sweep coordinates corresponding to given subscript:
 function coordinates(d::DataHR, subscr::Tuple=0)
@@ -138,9 +138,9 @@ function parameter(::Type{DataHR}, sweeps::Vector{PSweep}, sweepno::Int)
 	end
 	return result
 end
-parameter(::Type{DataHR}, sweeps::Vector{PSweep}, id::AbstractString) =
+parameter(::Type{DataHR}, sweeps::Vector{PSweep}, id::String) =
 	parameter(DataHR, sweeps, dimension(DataHR, sweeps, id))
-parameter(d::DataHR, id::AbstractString) = parameter(DataHR, d.sweeps, id)
+parameter(d::DataHR, id::String) = parameter(DataHR, d.sweeps, id)
 
 
 #==Dataset reductions

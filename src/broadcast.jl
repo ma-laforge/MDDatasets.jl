@@ -1,8 +1,6 @@
 #MDDatasets: Base broadcast support
 #-------------------------------------------------------------------------------
 
-import Base: broadcast
-
 #==Nomenclature:
 A 1-argument function is one where 1 argument in particular dictates the
 dimensonality of the operation.
@@ -107,43 +105,43 @@ function apply(fn::Function, d1::Number, d2::DataF1, args...; kwargs...)
 	return DataF1(d2.x, y)
 end
 
-#Generic broadcast functions:
+#Generic broadcastMD functions (avoids name collisions):
 #NOTE: "core" means most elemental version of the function
 #-------------------------------------------------------------------------------
 #fn(DataF1) - core: fn(Number)
-broadcast(::CastType1{Number,1}, fn::Function, d::DataF1, args...; kwargs...) =
+broadcastMD(::CastType1{Number,1}, fn::Function, d::DataF1, args...; kwargs...) =
 	DataF1(d.x, fn(d.y, args...; kwargs...))
 
 #fn(DataF1) - core: fn(DataF1)
-broadcast(::CastType1{DataF1,1}, fn::Function, d::DataF1, args...; kwargs...) =
+broadcastMD(::CastType1{DataF1,1}, fn::Function, d::DataF1, args...; kwargs...) =
 	fn(d, args...; kwargs...)
 
 #Reducing fn(DataF1) - core: fn(Number)
-broadcast(::CastTypeRed1{Number,1}, fn::Function, d::DataF1, args...; kwargs...) =
+broadcastMD(::CastTypeRed1{Number,1}, fn::Function, d::DataF1, args...; kwargs...) =
 	fn(d.y, args...; kwargs...)
 
 #fn(Number, Number) - core: fn(Number, Number)
-broadcast(CT::CastType2{Number,1,Number,2}, fn::Function, d1::Number, d2::Number, args...; kwargs...) =
+broadcastMD(CT::CastType2{Number,1,Number,2}, fn::Function, d1::Number, d2::Number, args...; kwargs...) =
 	fn(d1, d2, args...; kwargs...)
 
 #fn(DataF1, DataF1) - core: fn(Number, Number)
-broadcast(CT::CastType2{Number,1,Number,2}, fn::Function, d1::DataF1, d2::DataF1, args...; kwargs...) =
+broadcastMD(CT::CastType2{Number,1,Number,2}, fn::Function, d1::DataF1, d2::DataF1, args...; kwargs...) =
 	apply(fn, d1, d2, args...; kwargs...)
 
 #fn(DataF1, Number) - core: fn(Number, Number)
-broadcast(CT::CastType2{Number,1,Number,2}, fn::Function, d1::DataF1, d2::Number, args...; kwargs...) =
+broadcastMD(CT::CastType2{Number,1,Number,2}, fn::Function, d1::DataF1, d2::Number, args...; kwargs...) =
 	apply(fn, d1, d2, args...; kwargs...)
 
 #fn(Number, DataF1) - core: fn(Number, Number)
-broadcast(CT::CastType2{Number,1,Number,2}, fn::Function, d1::Number, d2::DataF1, args...; kwargs...) =
+broadcastMD(CT::CastType2{Number,1,Number,2}, fn::Function, d1::Number, d2::DataF1, args...; kwargs...) =
 	apply(fn, d1, d2, args...; kwargs...)
 
 #fn(DataF1, DataF1) - core: fn(DataF1, DataF1)
-broadcast(CT::CastType2{DataF1,1,DataF1,2}, fn::Function, d1::DataF1, d2::DataF1, args...; kwargs...) =
+broadcastMD(CT::CastType2{DataF1,1,DataF1,2}, fn::Function, d1::DataF1, d2::DataF1, args...; kwargs...) =
 	fn(d1, d2, args...; kwargs...)
 
 #Reducing fn(DataF1) - core: fn(DataF1)
-broadcast(::CastTypeRed1{DataF1,1}, fn::Function, d::DataF1, args...; kwargs...) =
+broadcastMD(::CastTypeRed1{DataF1,1}, fn::Function, d::DataF1, args...; kwargs...) =
 	fn(d, args...; kwargs...)
 
 #Last line

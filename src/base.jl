@@ -23,7 +23,7 @@ value(x::Index) = x.v
 
 #Parameter sweep
 type PSweep{T}
-	id::ASCIIString #TODO: Support UTF8?? - concrete type simplifies writing to HDF5
+	id::String
 	v::Vector{T}
 #TODO: ensure increasing order?
 end
