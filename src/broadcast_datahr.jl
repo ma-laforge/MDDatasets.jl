@@ -81,21 +81,22 @@ end
 
 #==Broadcasting data up-to a given sweep dimension
 ===============================================================================#
-function broadcastMD{T<:Number}(s::Vector{PSweep}, d::T)
+#WARN: Renamed broadcastMDSweep due to strange dispatch issues as "broadcastMD"
+function broadcastMDSweep{T<:Number}(s::Vector{PSweep}, d::T)
 	result = DataHR{T}(s)
 	for i in 1:length(result.elem)
 		result.elem[i] = d
 	end
 	return result
 end
-function broadcastMD(s::Vector{PSweep}, d::DataF1)
+function broadcastMDSweep(s::Vector{PSweep}, d::DataF1)
 	result = DataHR{DataF1}(s)
 	for i in 1:length(result.elem)
 		result.elem[i] = d
 	end
 	return result
 end
-function broadcastMD{T}(s::Vector{PSweep}, d::DataHR{T})
+function broadcastMDSweep{T}(s::Vector{PSweep}, d::DataHR{T})
 	if s == d.sweeps; return d; end
 	_map = getmap(s, d.sweeps)
 	result = DataHR{T}(s)
@@ -116,7 +117,7 @@ function _broadcast{T}(::Type{T}, s::Vector{PSweep}, fn::Function, args...; kwar
 	bargs = Vector{Any}(length(args)) #Broadcasted version of args
 	for i in 1:length(args)
 		if typeof(args[i])<:DataMD
-			bargs[i] = broadcastMD(s, args[i])
+			bargs[i] = broadcastMDSweep(s, args[i])
 		else
 			bargs[i] = args[i]
 		end
@@ -125,7 +126,7 @@ function _broadcast{T}(::Type{T}, s::Vector{PSweep}, fn::Function, args...; kwar
 	for i in 1:length(kwargs)
 		(k,v) = kwargs[i]
 		if typeof(v)<:DataMD
-			bkwargs[i] = tuple(k, broadcastMD(s, v))
+			bkwargs[i] = tuple(k, broadcastMDSweep(s, v))
 		else
 			bkwargs[i] = kwargs[i]
 		end
