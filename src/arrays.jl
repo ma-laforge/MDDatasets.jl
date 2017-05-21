@@ -8,7 +8,7 @@ These tools should eventually be moved to a separate unit.
 #==Iterators
 ===============================================================================#
 #Enables array iteration using array subscripts:
-immutable SubscriptIterator
+struct SubscriptIterator
 	sz::Tuple
 	elemcount::Int
 end

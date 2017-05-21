@@ -5,7 +5,7 @@ These tools should eventually be moved to a separate unit.
 =#
 
 
-immutable Point2D{TX<:Number, TY<:Number}
+struct Point2D{TX<:Number, TY<:Number}
 	x::TX
 	y::TY
 end
@@ -13,7 +13,7 @@ end
 #Allows one to specify limits of a 1D range
 #TODO: do we want to enforce min<=max???
 #TODO: Add parameter to indicate if limits can go negative, overlap, ...??
-immutable Limits1D{T<:Number}
+struct Limits1D{T<:Number}
 	min::T
 	max::T
 end

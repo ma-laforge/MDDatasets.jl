@@ -6,11 +6,11 @@
 
 #Linked-list representation of multi-dimensional datasets:
 #-------------------------------------------------------------------------------
-type DataRS{T} <: DataMD
+mutable struct DataRS{T} <: DataMD
 	sweep::PSweep
 	elem::Vector{T}
 
-	function DataRS(sweep::PSweep, elem::Vector)
+	function DataRS{T}(sweep::PSweep, elem::Vector{T}) where {T}
 		if !elemallowed(DataRS, eltype(elem))
 			msg = "Can only create DataRS{T} for T ∈ {DataRS, DataF1, DataFloat, DataInt, DataComplex}"
 			throw(ArgumentError(msg))
@@ -20,14 +20,15 @@ type DataRS{T} <: DataMD
 		return new(sweep, elem)
 	end
 end
-elemallowed{T}(::Type{DataRS}, t::Type{T}) = elemallowed(DataMD, t) #Allow basic types
-elemallowed(::Type{DataRS}, ::Type{DataRS}) = true #Also allow recursive structures
 
 #Shorthand (because default (non-parameterized) constructor was overwritten):
 DataRS{T}(sweep::PSweep, elem::Vector{T}) = DataRS{T}(sweep, elem)
 
+elemallowed{T}(::Type{DataRS}, t::Type{T}) = elemallowed(DataMD, t) #Allow basic types
+elemallowed(::Type{DataRS}, ::Type{DataRS}) = true #Also allow recursive structures
+
 #Generate empty DataRS structure:
-(::Type{DataRS{T}}){T}(sweep::PSweep) = DataRS{T}(sweep, Array(T, length(sweep)))
+(::Type{DataRS{T}}){T}(sweep::PSweep) = DataRS{T}(sweep, Array{T}(length(sweep)))
 
 
 #==Type promotions
@@ -52,7 +53,7 @@ function Base.fill!(fn::Function, d::DataRS)
 	return d
 end
 Base.fill{T}(fn::Function, ::Type{DataRS{T}}, sweep::PSweep) =
-	fill!(fn, DataRS(sweep, Array(T, length(sweep))))
+	fill!(fn, DataRS(sweep, Array{T}(length(sweep))))
 Base.fill(fn::Function, ::Type{DataRS}, sweep::PSweep) = fill(fn, DataRS{DataRS}, sweep)
 
 
@@ -132,7 +133,7 @@ end
 
 #Print leaf element:
 function printDataRSelem(io::IO, ds::DataRS, idx::Int, indent::String)
-	if isdefined(ds.elem, idx)
+	if isassigned(ds.elem, idx)
 		println(io, ds.elem[idx])
 	else
 		println(io, indent, "UNDEFINED")
@@ -141,7 +142,7 @@ end
 #Print next level of recursive DataRS:
 function printDataRSelem{T<:DataRS}(io::IO, ds::DataRS{T}, idx::Int, indent::String)
 	println(io)
-	if isdefined(ds.elem, idx)
+	if isassigned(ds.elem, idx)
 		printDataRS(io, ds.elem[idx], indent)
 	else
 		println(io, indent, "UNDEFINED")

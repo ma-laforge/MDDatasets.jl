@@ -4,8 +4,8 @@
 
 #==High-level types
 ===============================================================================#
-abstract DataMD #Multi-dimensional data
-abstract LeafDS <: DataMD #Leaf dataset
+abstract type DataMD end #Multi-dimensional data
+abstract type LeafDS <: DataMD end #Leaf dataset
 
 
 #==Helper types (TODO: move to somewhere else?)
@@ -15,21 +15,21 @@ abstract LeafDS <: DataMD #Leaf dataset
 const Event = DS{:event}()
 
 #Explicitly tells multi-dispatch engine a value is meant to be an index:
-immutable Index
+struct Index
 	v::Int
 end
 Index(idx::AbstractFloat) = Index(round(Int,idx)) #Convenient
 value(x::Index) = x.v
 
 #Parameter sweep
-type PSweep{T}
+mutable struct PSweep{T}
 	id::String
 	v::Vector{T}
 #TODO: ensure increasing order?
 end
 
 #TODO: Deprecate DataScalar?? - and LeafDS?
-#immutable DataScalar{T<:Number} <: LeafDS
+#struct DataScalar{T<:Number} <: LeafDS
 #	v::T
 #end
 
@@ -39,7 +39,7 @@ end
 
 #DataF1, Function of 1 variable, y(x): optimized for processing on y-data
 #(All y-data points are stored contiguously)
-type DataF1{TX<:Number, TY<:Number} <: LeafDS
+mutable struct DataF1{TX<:Number, TY<:Number} <: LeafDS
 	x::Vector{TX}
 	y::Vector{TY}
 #==TODO: find a way to validate lengths:
@@ -73,11 +73,11 @@ end
 #==Type aliases
 ===============================================================================#
 #Shorthands:
-typealias DF1_Num Union{DataF1,Number}
-#typealias MD_Num Union{DataMD,Number}
+const DF1_Num = Union{DataF1,Number}
+#const MD_Num = Union{DataMD,Number}
 
 #Alternative to DF1_Num?:
-#typealias MDDataElem Union{DataF1,DataFloat,DataInt,DataComplex}
+#const MDDataElem = Union{DataF1,DataFloat,DataInt,DataComplex}
 
 
 #==Type promotions

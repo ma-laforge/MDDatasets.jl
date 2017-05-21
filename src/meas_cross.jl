@@ -28,7 +28,7 @@ const XINGTYPE_ALL =
 #==Types
 ===============================================================================#
 
-immutable CrossType
+struct CrossType
 	v::UInt
 end
 

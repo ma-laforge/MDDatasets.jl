@@ -165,7 +165,7 @@ end
 
 #Broadcast functions capable of operating on DataF1 values:
 #-------------------------------------------------------------------------------
-typealias DF1_DRS Union{DataF1,DataRS}
+const DF1_DRS = Union{DataF1,DataRS}
 #fn(DataRS, DataRS) - core: fn(DataF1, DataF1):
 function broadcastMD{T1<:DF1_DRS,T2<:DF1_DRS}(CT::CastType2{DataF1,1,DataF1,2}, fn::Function,
 	d1::DataRS{T1}, d2::DataRS{T2}, args...; kwargs...)

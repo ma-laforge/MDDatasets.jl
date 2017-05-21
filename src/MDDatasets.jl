@@ -8,9 +8,9 @@ import Base: values
 #==Suggested scalar data types
 	-Use concrete types of the largest size natively supported by processor
    -Eventually should move to 128-bit values, etc.==#
-typealias DataFloat Float64
-typealias DataInt Int64
-typealias DataComplex Complex{Float64}
+const DataFloat = Float64
+const DataInt = Int64
+const DataComplex = Complex{Float64}
 #==NOTES:
 Don't use Int.  If this is like c, "Int" represents the "native" integer
 size/type.  That might not be the same as the largest integer that can be
@@ -21,7 +21,7 @@ representation.==#
 
 #Type used to dispatch on a symbol & minimize namespace pollution:
 #-------------------------------------------------------------------------------
-immutable DS{Symbol}; end; #Dispatchable symbol
+struct DS{Symbol}; end; #Dispatchable symbol
 DS(v::Symbol) = DS{v}()
 
 #-------------------------------------------------------------------------------
@@ -70,6 +70,7 @@ export value #High-collision WARNING: other modules probably want to export "val
 export sweep #Access values from a particular parameter sweep.
 export sweeps #Get the list of parameter sweeps in DataHR.
 export subscripts #Provides subscripts iterator to access each element in DataHR.
+export getsubarray
 export coordinates #Get parameter sweep coordinates corresponding to given subscripts.
 export parameter #Get parameter values for a particular sweep.
 

@@ -6,15 +6,15 @@
 
 #Hyper-rectangle -representation of data:
 #-------------------------------------------------------------------------------
-type DataHR{T} <: DataMD
+mutable struct DataHR{T} <: DataMD
 	sweeps::Vector{PSweep}
 	elem::Array{T}
 
-	function DataHR{TA,N}(sweeps::Vector{PSweep}, elem::Array{TA,N})
+	function DataHR{T}(sweeps::Vector{PSweep}, elem::Array{T}) where {T}
 		if !elemallowed(DataMD, eltype(elem))
 			msg = "Can only create DataHR{T} for T ∈ {DataF1, DataFloat, DataInt, DataComplex}"
 			throw(ArgumentError(msg))
-		elseif ndims(DataHR, sweeps) != N
+		elseif ndims(DataHR, sweeps) != ndims(elem)
 			throw(ArgumentError("Number of sweeps must match dimensionality of elem"))
 		end
 		return new(sweeps, elem)
@@ -22,7 +22,7 @@ type DataHR{T} <: DataMD
 end
 
 #Shorthand (because default (non-parameterized) constructor was overwritten):
-DataHR{T,N}(sweeps::Vector{PSweep}, a::Array{T,N}) = DataHR{T}(sweeps, a)
+DataHR{T}(sweeps::Vector{PSweep}, a::Array{T}) = DataHR{T}(sweeps, a)
 
 #Construct DataHR from Vector{PSweep}:
 (::Type{DataHR{T}}){T}(sweeps::Vector{PSweep}) = DataHR{T}(sweeps, Array{T}(size(DataHR, sweeps)...))
@@ -148,7 +148,7 @@ parameter(d::DataHR, id::String) = parameter(DataHR, d.sweeps, id)
 
 #Like getindex(A, inds...), but with DataHR:
 #TODO: Support array "view"s instead of copying with "getindex" for efficiency??
-function getsubarray{T}(d::DataHR{T}, inds...)
+function getsubarrayind{T}(d::DataHR{T}, inds...)
 	sweeps = PSweep[]
 	idx = 1
 	for rng in inds
@@ -186,11 +186,13 @@ function getsubarraykw{T}(d::DataHR{T}; kwargs...)
 	return DataHR{T}(sweeps, reshape(getindex(d.elem, indlist...), size(DataHR, sweeps)))
 end
 
-function Base.sub{T}(d::DataHR{T}, args...; kwargs...)
+#TODO: Support array "view"s instead of copying with "getindex" for efficiency??
+#NOTE: Used to be called "sub", which was replaced by "view".
+function getsubarray{T}(d::DataHR{T}, args...; kwargs...)
 	if length(kwargs) > 0
 		return getsubarraykw(d, args...; kwargs...)
 	else
-		return getsubarray(d, args...)
+		return getsubarrayind(d, args...)
 	end
 end
 
@@ -208,7 +210,7 @@ function Base.show(io::IO, ds::DataHR)
 	typestr = string(typeof(ds))
 	print(io, "$typestr$szstr[\n")
 	for inds in subscripts(ds)
-		if isdefined(ds.elem, inds...)
+		if isassigned(ds.elem, inds...)
 			subset = ds.elem[inds...]
 			print(io, " $inds: "); show(io, subset); println(io)
 		else

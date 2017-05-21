@@ -6,7 +6,7 @@
 #==Type definitions
 ===============================================================================#
 
-type SubscriptMap
+mutable struct SubscriptMap
 	outidx::Vector{Int} #List of indices (of output array)
 	outlen::Int #Number of indices in output subscript
 end

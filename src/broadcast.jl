@@ -11,17 +11,17 @@ the operation.
 
 #==Type definitions
 ===============================================================================#
-abstract CastType
-abstract CastTypeRed <: CastType #Identifies a reducing function
+abstract type CastType end
+abstract type CastTypeRed <: CastType end #Identifies a reducing function
 
 #Identifies a function cast with 1 argument of TCAST:
-immutable CastType1{TCAST, POS} <: CastType; end
+struct CastType1{TCAST, POS} <: CastType; end
 #Identifies a reducing function cast with 1 argument of TCAST, returning collection(Number):
-immutable CastTypeRed1{TCAST, POS} <: CastTypeRed; end
+struct CastTypeRed1{TCAST, POS} <: CastTypeRed; end
 #Identifies a function cast with 2 argument of TCAST1/2:
-immutable CastType2{TCAST1, POS1, TCAST2, POS2} <: CastType; end
+struct CastType2{TCAST1, POS1, TCAST2, POS2} <: CastType; end
 #Identifies a reducing function cast with 2 argument of TCAST1/2, returning collection(Number):
-immutable CastTypeRed2{TCAST1, POS1, TCAST2, POS2} <: CastTypeRed; end #Reducing function (DataF1->Number)
+struct CastTypeRed2{TCAST1, POS1, TCAST2, POS2} <: CastTypeRed; end #Reducing function (DataF1->Number)
 
 #Constructors:
 CastType{T}(::Type{T}, pos::Int) = CastType1{T, pos}()
