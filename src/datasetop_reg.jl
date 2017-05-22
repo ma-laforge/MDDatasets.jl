@@ -11,10 +11,6 @@ be the default.  There is not need to use the "." operator versions.
 	if these should be ported, or new names/uses should be found
 ==#
 
-#==Helper functions
-===============================================================================#
-#Interpolate to perform a .op call:
-_dotop(x)=Symbol(".$x")
 
 #==Support basic math operations
 ===============================================================================#
@@ -28,7 +24,7 @@ for op in _operators1; @eval begin #CODEGEN-------------------------------------
 Base.$op(i::Index) = Index($op(i.v))
 
 #op DataF1:
-Base.$op(d::DataF1) = DataF1(d.x, $op(d.y))
+Base.$op(d::DataF1) = DataF1(d.x, ($op).(d.y))
 
 #Everything else:
 Base.$op(d::DataMD) = broadcastMD(CAST_BASEOP1, Base.$op, d)
@@ -40,16 +36,16 @@ const _operators2 = Symbol[:-, :+, :/, :*, :>, :<, :>=, :<=, :!=, :(==)]
 for op in _operators2; @eval begin #CODEGEN--------------------------------------
 
 #Index op Index:
-Base.$op(i1::Index, i2::Index) = Index($(_dotop(op))(i1.v, i2.v))
+Base.$op(i1::Index, i2::Index) = Index(($op).(i1.v, i2.v))
 
 #DataF1 op DataF1:
 Base.$op(d1::DataF1, d2::DataF1) = apply(Base.$op, d1, d2)
 
 #DataF1 op Number:
-Base.$op(d::DataF1, n::Number) = DataF1(d.x, $(_dotop(op))(d.y, n))
+Base.$op(d::DataF1, n::Number) = DataF1(d.x, ($op).(d.y, n))
 
 #Number op DataF1:
-Base.$op(n::Number, d::DataF1) = DataF1(d.x, $(_dotop(op))(n, d.y))
+Base.$op(n::Number, d::DataF1) = DataF1(d.x, ($op).(n, d.y))
 
 #Everything else:
 Base.$op(d1::DataMD, d2::DataMD) = broadcastMD(CAST_BASEOP2, Base.$op, d1, d2)
@@ -84,7 +80,7 @@ rand
 
 #1-argument Base.functions:
 const _basefn1 = [:(Base.$fn) for fn in [
-	:zeros, :ones, :abs, :abs2, :angle,
+	:abs, :abs2, :angle,
 	:imag, :real, :exponent,
 	:exp, :exp2, :exp10, :expm1,
 	:log, :log10, :log1p, :log2,
@@ -107,6 +103,21 @@ const _custbasefn1 = [
 ]
 
 for fn in vcat(_basefn1,_custbasefn1); @eval begin #CODEGEN---------------------
+
+#fn(DataF1)
+$fn(d::DataF1, args...; kwargs...) = DataF1(d.x, ($fn).(d.y, args...; kwargs...))
+
+#Everything else:
+$fn(d::DataMD, args...; kwargs...) = broadcastMD(CAST_BASEOP1, $fn, d, args...; kwargs...)
+
+end; end #CODEGEN---------------------------------------------------------------
+
+#1-argument Base.functions that apply on arrays (no "." to broadcast):
+const _basefn1arr = [:(Base.$fn) for fn in [
+	:zeros, :ones
+]]
+
+for fn in vcat(_basefn1arr); @eval begin #CODEGEN---------------------
 
 #fn(DataF1)
 $fn(d::DataF1, args...; kwargs...) = DataF1(d.x, $fn(d.y, args...; kwargs...))
@@ -150,7 +161,7 @@ const _baseredfn1 = [:(Base.$fn) for fn in [
 for fn in _baseredfn1; @eval begin #CODEGEN-------------------------------------
 
 #fn(DataF1):
-$fn(d::DataF1) = $fn(d.y)
+$fn(d::DataF1) = ($fn)(d.y)
 
 #Everything else:
 $fn(d::DataMD) = broadcastMD(CAST_BASEOPRED1, $fn, d)
