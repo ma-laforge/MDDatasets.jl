@@ -22,15 +22,15 @@ mutable struct DataHR{T} <: DataMD
 end
 
 #Shorthand (because default (non-parameterized) constructor was overwritten):
-DataHR{T}(sweeps::Vector{PSweep}, a::Array{T}) = DataHR{T}(sweeps, a)
+DataHR(sweeps::Vector{PSweep}, a::Array{T}) where T = DataHR{T}(sweeps, a)
 
 #Construct DataHR from Vector{PSweep}:
-(::Type{DataHR{T}}){T}(sweeps::Vector{PSweep}) = DataHR{T}(sweeps, Array{T}(size(DataHR, sweeps)...))
+(::Type{DataHR{T}})(sweeps::Vector{PSweep}) where T = DataHR{T}(sweeps, Array{T}(undef, size(DataHR, sweeps)...))
 
 #Construct DataHR{DataF1} from DataHR{Number}
 #Collapse inner-most sweep (last dimension), by default:
 #TODO: use convert(...) instead?
-function (::Type{DataHR{DataF1}}){T<:Number}(d::DataHR{T})
+function (::Type{DataHR{DataF1}})(d::DataHR{T}) where T<:Number
 	sweeps = d.sweeps[1:end-1]
 	x = d.sweeps[end].v
 
@@ -56,7 +56,7 @@ end
 
 #==Type promotions
 ===============================================================================#
-Base.promote_rule{T1<:DataHR, T2<:Number}(::Type{T1}, ::Type{T2}) = DataHR
+Base.promote_rule(::Type{T1}, ::Type{T2}) where {T1<:DataHR, T2<:Number} = DataHR
 
 
 #==Accessor functions
@@ -76,16 +76,14 @@ end
 #Returns the dimension corresponding to the given string:
 function dimension(::Type{DataHR}, sweeps::Vector{PSweep}, id::String)
 	dim = findfirst((s)->(id==s.id), sweeps)
-	ensure(dim>0, ArgumentError("Sweep not found: $id."))
+	ensure(dim!=nothing, ArgumentError("Sweep not found: $id."))
 	return dim
 end
 dimension(d::DataHR, id::String) = dimension(DataHR, d.sweeps, id)
 
 #Returns an element subscripts iterator for a DataHR corresponding to Vector{PSweep}.
-function subscripts(::Type{DataHR}, sweeps::Vector{PSweep})
-	sz = size(DataHR, sweeps)
-	return SubscriptIterator(sz, prod(sz))
-end
+subscripts(::Type{DataHR}, sweeps::Vector{PSweep}) =
+	subscripts(size(DataHR, sweeps))
 subscripts(d::DataHR) = subscripts(d.elem)
 
 #Dimensionality of DataHR array:
@@ -120,10 +118,10 @@ function Base.fill!(fn::Function, d::DataHR)
 	end
 	return d
 end
-Base.fill{T}(fn::Function, ::Type{DataHR{T}}, sweeps::Vector{PSweep}) =
+Base.fill(fn::Function, ::Type{DataHR{T}}, sweeps::Vector{PSweep}) where T =
 	fill!(fn, DataHR{T}(sweeps))
 Base.fill(fn::Function, ::Type{DataHR}, sweeps::Vector{PSweep}) = fill(fn, DataHR{DataF1}, sweeps)
-Base.fill{T}(fn::Function, ::Type{DataHR{T}}, sweep::PSweep) = fill(fn, DataHR{DataF1}, PSweep[sweep])
+Base.fill(fn::Function, ::Type{DataHR{T}}, sweep::PSweep) where T = fill(fn, DataHR{DataF1}, PSweep[sweep])
 
 
 #==Data generation
@@ -148,7 +146,7 @@ parameter(d::DataHR, id::String) = parameter(DataHR, d.sweeps, id)
 
 #Like getindex(A, inds...), but with DataHR:
 #TODO: Support array "view"s instead of copying with "getindex" for efficiency??
-function getsubarrayind{T}(d::DataHR{T}, inds...)
+function getsubarrayind(d::DataHR{T}, inds...) where T
 	sweeps = PSweep[]
 	idx = 1
 	for rng in inds
@@ -165,7 +163,7 @@ function getsubarrayind{T}(d::DataHR{T}, inds...)
 end
 
 #getindex(DataHR, inds...), using key/value pairs:
-function getsubarraykw{T}(d::DataHR{T}; kwargs...)
+function getsubarraykw(d::DataHR{T}; kwargs...) where T
 	sweeps = PSweep[]
 	indlist = Vector{Int}[]
 	for sweep in d.sweeps
@@ -188,7 +186,7 @@ end
 
 #TODO: Support array "view"s instead of copying with "getindex" for efficiency??
 #NOTE: Used to be called "sub", which was replaced by "view".
-function getsubarray{T}(d::DataHR{T}, args...; kwargs...)
+function getsubarray(d::DataHR{T}, args...; kwargs...) where T
 	if length(kwargs) > 0
 		return getsubarraykw(d, args...; kwargs...)
 	else
@@ -220,7 +218,7 @@ function Base.show(io::IO, ds::DataHR)
 	print(io, "]\n")
 end
 
-function Base.show{T<:Number}(io::IO, ds::DataHR{T})
+function Base.show(io::IO, ds::DataHR{T}) where T<:Number
 	szstr = string(size(ds.elem))
 	typestr = string(typeof(ds))
 	print(io, "$typestr$szstr:\n")

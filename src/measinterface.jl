@@ -4,7 +4,7 @@
 
 meas(mtype::Symbol, args...; kwargs...) =
 	meas(DS(mtype), args...; kwargs...)
-meas{T<:Symbol}(::DS{T}, args...; kwargs...) =
+meas(::DS{T}, args...; kwargs...) where T<:Symbol =
 	throw(ArgumentError("Measurement type: meas($mtype, ...) not recognized."))
 
 meas(::DS{:xcross}, args...; kwargs...) = xcross(args...; kwargs...)

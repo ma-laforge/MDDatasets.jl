@@ -38,11 +38,11 @@ println("\nTest broadcast operations on DataHR:")
 #-------------------------------------------------------------------------------
 println(sepline)
 dhr+dhr
-try; dhr+dhr2; warn("Failed")
-catch e; info("Fail successful: ", e.msg); end
+try; dhr+dhr2; @warn("Failed")
+catch e; @info("Fail successful: ", msg=e); end
 
-try; dhr+dhr3; warn("Failed")
-catch e; info("Fail successful: ", e.msg); end
+try; dhr+dhr3; @warn("Failed")
+catch e; @info("Fail successful: ", msg=e); end
 
 
 println("\nTest conversion to DataRS:")
@@ -59,8 +59,8 @@ try;
 	ensure(false) do
 		ArgumentError("Predicate failed.")
 	end
-	warn("Failed")
-catch e; info("Fail successful: ", e.msg); end
+	@warn("Failed")
+catch e; @info("Fail successful: ", msg=e); end
 
 
 #==

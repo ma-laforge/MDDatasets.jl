@@ -7,20 +7,9 @@ These tools should eventually be moved to a separate unit.
 
 #==Iterators
 ===============================================================================#
-#Enables array iteration using array subscripts:
-struct SubscriptIterator
-	sz::Tuple
-	elemcount::Int
-end
-#Implement iterator interface
-Base.start(::SubscriptIterator) = 1
-Base.next(ci::SubscriptIterator, iterstate::Int) = (ind2sub(ci.sz, iterstate), iterstate+1)
-Base.done(ci::SubscriptIterator, iterstate::Int) = iterstate > ci.elemcount;
-Base.eltype(::Type{SubscriptIterator}) = Tuple
-Base.length(ci::SubscriptIterator) = ci.elemcount;
-
 #Obtain an array iterator:
-subscripts(a::Array) = SubscriptIterator(size(a), length(a))
+subscripts(sz::Tuple) = [Tuple(x) for x in CartesianIndices(sz)]
+subscripts(a::Array) = [Tuple(x) for x in CartesianIndices(a)]
 
 
 #==Useful tests
@@ -37,7 +26,7 @@ function isincreasing(v::Vector)
 	return true
 end
 
-isincreasing(r::Range) = (step(r) > 0)
+isincreasing(r::AbstractRange) = (step(r) > 0)
 
 
 #==Validation functions (throw exceptions)
@@ -49,7 +38,7 @@ isincreasing(r::Range) = (step(r) > 0)
 
 #Assumes vector is ordered... Not currently checking that it is true..
 function findclosestindex(v::Vector, val)
-	const reltol =  1/1000
+	reltol =  1/1000 #WANTCONST
 	if length(v) < 2
 		if abs(1-val/v[1]) < reltol
 			return 1

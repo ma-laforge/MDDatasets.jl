@@ -20,7 +20,7 @@ xmin(d::DataF1) = minimum(d.x)
 #(shift x-values @ mean position)
 #-------------------------------------------------------------------------------
 function delta(d::DataF1; shiftx=true)
-	x = shiftx? meanadj(d.x): d.x[1:end-1]
+	x = shiftx ? meanadj(d.x) : d.x[1:end-1]
 	return DataF1(x, delta(d.y))
 end
 
@@ -54,7 +54,7 @@ end
 
 #-------------------------------------------------------------------------------
 function deriv(d::DataF1; shiftx=true)
-	x = shiftx? meanadj(d.x): d.x[1:end-1]
+	x = shiftx ? meanadj(d.x) : d.x[1:end-1]
 	return DataF1(x, delta(d.y)./delta(d.x))
 end
 
@@ -79,7 +79,7 @@ end
 ===============================================================================#
 
 #-------------------------------------------------------------------------------
-function clip{TX<:Number, TY<:Number}(d::DataF1{TX,TY}, rng::Limits1D{TX})
+function clip(d::DataF1{TX,TY}, rng::Limits1D{TX}) where {TX<:Number, TY<:Number}
 	validate(d); #Expensive, but might avoid headaches
 	ensurenotinverted(rng)
 	if length(d) < 1; return d; end;
@@ -87,7 +87,7 @@ function clip{TX<:Number, TY<:Number}(d::DataF1{TX,TY}, rng::Limits1D{TX})
 	xmin = clamp(d.x[1], rng)
 	xmax = clamp(d.x[end], rng)
 	dx = d.x
-	x = Vector{TX}(length(dx))
+	x = Vector{TX}(undef, length(dx))
 
 	id=1
 	while dx[id]<xmin
@@ -112,7 +112,7 @@ function clip{TX<:Number, TY<:Number}(d::DataF1{TX,TY}, rng::Limits1D{TX})
 
 	#Copy y-values:
 	TYR = typeof(one(promote_type(TX,TY))/2) #TODO: is there better way?
-	y = Vector{TYR}(length(x))
+	y = Vector{TYR}(undef, length(x))
 	for i in istart:(length(x)-1)
 		y[i] = d.y[dyoffset+i]
 	end
@@ -122,9 +122,9 @@ function clip{TX<:Number, TY<:Number}(d::DataF1{TX,TY}, rng::Limits1D{TX})
 
 	return DataF1(x, y)
 end
-clip{TX<:Number, TY<:Number}(d::DataF1{TX,TY}; xmin=nothing, xmax=nothing) =
+clip(d::DataF1{TX,TY}; xmin=nothing, xmax=nothing) where {TX<:Number, TY<:Number} =
 	clip(d, Limits1D{TX}(xmin, xmax))
-clip{TX<:Number, TY<:Number}(d::DataF1{TX,TY}, rng::Range) =
+clip(d::DataF1{TX,TY}, rng::AbstractRange) where {TX<:Number, TY<:Number} =
 	clip(d, Limits1D{TX}(rng))
 
 
@@ -132,7 +132,7 @@ clip{TX<:Number, TY<:Number}(d::DataF1{TX,TY}, rng::Range) =
 ===============================================================================#
 
 #-------------------------------------------------------------------------------
-function sample{TX<:Number, TY<:Number}(d::DataF1{TX,TY}, x::Range)
+function sample(d::DataF1{TX,TY}, x::AbstractRange) where {TX<:Number, TY<:Number}
 	validate(d); ensureincreasingx(x); #Expensive, but might avoid headaches
 	#TODO: deal with empty d
 	if length(x) < 1

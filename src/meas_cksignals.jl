@@ -24,7 +24,7 @@ function measfreq(d::DataF1; nmax::Integer=0, tstart::Real=-Inf,
 	xing::CrossType=CrossType(), shiftx=true)
 
 	T = measperiod(d, nmax=nmax, tstart=tstart, xing=xing, shiftx=shiftx)
-	return DataF1(T.x, 1./T.y)
+	return DataF1(T.x, 1 ./ T.y)
 end
 
 #measduty: Measure duty cycle of a periodic signal @ zero-crossings:
@@ -36,7 +36,7 @@ function measduty(d::DataF1; nmax::Integer=0, tstart::Real=-Inf, shiftx=true)
 	xfall = xveccross(d, nmax, xrise1, CrossType(:fall))
 	#Need 1 more rise to get period
 	numpts = min(length(xrise)-1, length(xfall))
-	x = shiftx? meanadj(xrise[1:(numpts+1)]): xrise[1:numpts]
+	x = shiftx ? meanadj(xrise[1:(numpts+1)]) : xrise[1:numpts]
 	duty = similar(xrise, numpts)
 
 	for i in 1:numpts

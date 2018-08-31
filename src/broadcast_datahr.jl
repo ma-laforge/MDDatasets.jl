@@ -11,7 +11,7 @@ mutable struct SubscriptMap
 	outlen::Int #Number of indices in output subscript
 end
 SubscriptMap(inlen::Int, outlen::Int) =
-	SubscriptMap(Vector{Int}(inlen), outlen)
+	SubscriptMap(Vector{Int}(undef, inlen), outlen)
 
 
 #==Error generators
@@ -39,12 +39,12 @@ end
 #Find "base" sweep (most complex data configuration to broadcast up to)
 #-------------------------------------------------------------------------------
 function basesweep(s1::Vector{PSweep}, s2::Vector{PSweep})
-	return length(s1)>length(s2)? s1: s2
+	return length(s1)>length(s2) ? s1 : s2
 end
 basesweep(s::Vector{PSweep}, d::DataHR) = basesweep(s,d.sweeps)
 basesweep(s::Vector{PSweep}, d::DataF1) = s
 basesweep(s::Vector{PSweep}, d::Number) = s
-basesweep{T<:Number}(s::Vector{PSweep}, v::Vector{T}) = s
+basesweep(s::Vector{PSweep}, v::Vector{T}) where T<:Number = s
 basesweep(d1::DataHR, d2::DataHR) = basesweep(d1.sweeps,d2.sweeps)
 basesweep(d1::DataHR, d2) = basesweep(d1.sweeps,d2)
 basesweep(d1, d2::DataHR) = basesweep(d2.sweeps,d2)
@@ -57,6 +57,7 @@ function getmap(basesweep::Vector{PSweep}, subsweep::Vector{PSweep})
 	found = zeros(Bool, length(subsweep))
 	for i in 1:length(basesweep)
 		idx = findfirst((x)->(x.id==basesweep[i].id), subsweep)
+		if nothing == idx; idx = 0; end
 		result.outidx[i] = idx
 		if idx>1
 			if basesweep[i].v != subsweep[idx].v
@@ -82,7 +83,7 @@ end
 #==Broadcasting data up-to a given sweep dimension
 ===============================================================================#
 #WARN: Renamed broadcastMDSweep due to strange dispatch issues as "broadcastMD"
-function broadcastMDSweep{T<:Number}(s::Vector{PSweep}, d::T)
+function broadcastMDSweep(s::Vector{PSweep}, d::T) where T<:Number
 	result = DataHR{T}(s)
 	for i in 1:length(result.elem)
 		result.elem[i] = d
@@ -96,7 +97,7 @@ function broadcastMDSweep(s::Vector{PSweep}, d::DataF1)
 	end
 	return result
 end
-function broadcastMDSweep{T}(s::Vector{PSweep}, d::DataHR{T})
+function broadcastMDSweep(s::Vector{PSweep}, d::DataHR{T}) where T
 	if s == d.sweeps; return d; end
 	_map = getmap(s, d.sweeps)
 	result = DataHR{T}(s)
@@ -110,11 +111,11 @@ end
 #==Broadcast function call on multi-dimensional data
 ===============================================================================#
 #Broadcast data up to base sweep of two first arguments, then call fn
-function _broadcast{T}(::Type{T}, s::Vector{PSweep}, fn::Function, args...; kwargs...)
+function _broadcast(::Type{T}, s::Vector{PSweep}, fn::Function, args...; kwargs...) where T
 	if length(s) < 1
 		return fn(args...; kwargs...)
 	end
-	bargs = Vector{Any}(length(args)) #Broadcasted version of args
+	bargs = Vector{Any}(undef, length(args)) #Broadcasted version of args
 	for i in 1:length(args)
 		if typeof(args[i])<:DataMD
 			bargs[i] = broadcastMDSweep(s, args[i])
@@ -122,7 +123,7 @@ function _broadcast{T}(::Type{T}, s::Vector{PSweep}, fn::Function, args...; kwar
 			bargs[i] = args[i]
 		end
 	end
-	bkwargs = Vector{Any}(length(kwargs)) #Broadcasted version of kwargs
+	bkwargs = Vector{Any}(undef, length(kwargs)) #Broadcasted version of kwargs
 	for i in 1:length(kwargs)
 		(k,v) = kwargs[i]
 		if typeof(v)<:DataMD
@@ -133,7 +134,7 @@ function _broadcast{T}(::Type{T}, s::Vector{PSweep}, fn::Function, args...; kwar
 	end
 	result = DataHR{T}(s) #Create empty result
 	for i in 1:length(result.elem)
-		curargs = Vector{Any}(length(bargs))
+		curargs = Vector{Any}(undef, length(bargs))
 		for j in 1:length(bargs)
 			if typeof(bargs[j]) <: DataHR
 				curargs[j] = bargs[j].elem[i]
@@ -141,7 +142,7 @@ function _broadcast{T}(::Type{T}, s::Vector{PSweep}, fn::Function, args...; kwar
 				curargs[j] = bargs[j]
 			end
 		end
-		curkwargs = Vector{Any}(length(bkwargs))
+		curkwargs = Vector{Any}(undef, length(bkwargs))
 		for j in 1:length(bkwargs)
 			(k,v) = bkwargs[j]
 			if typeof(v) <: DataHR
@@ -164,7 +165,7 @@ end
 #Find base sweep for a 1-argument broadcastMD
 #-------------------------------------------------------------------------------
 fnbasesweep(fn::Function, d) = PSweep[]
-fnbasesweep{T}(fn::Function, d::DataHR{T}) = d.sweeps
+fnbasesweep(fn::Function, d::DataHR{T}) where T = d.sweeps
 
 #Ensure collection is composed of DataF1 (ex: DataHR{DataF1}):
 #Collapses outer-most dimension of DataHR{Number} to a DataHR{DataF1} value, if necessary
@@ -175,10 +176,10 @@ ensure_coll_DataF1(fn::Function, d::DataHR) = DataHR{DataF1}(d)
 #Broadcast functions capable of operating directly on 1 base type (Number):
 #-------------------------------------------------------------------------------
 #DataHR{DataF1/Number}
-broadcastMD{T}(::CastType1{Number,1}, fn::Function, d::DataHR{T}, args...; kwargs...) =
+broadcastMD(::CastType1{Number,1}, fn::Function, d::DataHR{T}, args...; kwargs...) where T =
 	_broadcast(T, fnbasesweep(fn, d), fn, d, args...; kwargs...)
 #Data reducing (DataHR{DataF1/Number})
-function broadcastMD{T<:Number}(::CastTypeRed1{Number,1}, fn::Function, d::DataHR{T}, args...; kwargs...)
+function broadcastMD(::CastTypeRed1{Number,1}, fn::Function, d::DataHR{T}, args...; kwargs...) where T<:Number
 	d = ensure_coll_DataF1(fn, d) #Collapse DataHR{Number}  => DataHR{DataF1}
 	_broadcast(T, fnbasesweep(fn, d), fn, d, args...; kwargs...)
 end
@@ -239,18 +240,18 @@ end
 #Broadcast functions capable of operating directly on base types (Number, Number):
 #-------------------------------------------------------------------------------
 #DataHR{DataF1/Number} & DataHR{DataF1/Number}:
-function broadcastMD{T1,T2}(::CastType2{Number,1,Number,2}, fn::Function,
-	d1::DataHR{T1}, d2::DataHR{T2}, args...; kwargs...)
+function broadcastMD(::CastType2{Number,1,Number,2}, fn::Function,
+	d1::DataHR{T1}, d2::DataHR{T2}, args...; kwargs...) where {T1,T2}
 	_broadcast(promote_type(T1,T2), fnbasesweep(fn, d1, d2), fn, d1, d2, args...; kwargs...)
 end
 #DataHR{DataF1/Number} & DataF1/Number:
-function broadcastMD{T1,T2<:DF1_Num}(::CastType2{Number,1,Number,2}, fn::Function,
-	d1::DataHR{T1}, d2::T2, args...; kwargs...)
+function broadcastMD(::CastType2{Number,1,Number,2}, fn::Function,
+	d1::DataHR{T1}, d2::T2, args...; kwargs...) where {T1,T2<:DF1_Num}
 	_broadcast(promote_type(T1,T2), fnbasesweep(fn, d1, d2), fn, d1, d2, args...; kwargs...)
 end
 #DataF1/Number & DataHR{DataF1/Number}:
-function broadcastMD{T1<:DF1_Num,T2}(::CastType2{Number,1,Number,2}, fn::Function,
-	d1::T1, d2::DataHR{T2}, args...; kwargs...)
+function broadcastMD(::CastType2{Number,1,Number,2}, fn::Function,
+	d1::T1, d2::DataHR{T2}, args...; kwargs...) where {T1<:DF1_Num,T2}
 	_broadcast(promote_type(T1,T2), fnbasesweep(fn, d1, d2), fn, d1, d2, args...; kwargs...)
 end
 

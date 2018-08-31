@@ -12,14 +12,14 @@
    Sadly: can't currently dispatch on function.  Need to think about this.
 =#
 
-result_type{T1<:DataRS, T2<:DataRS}(fn::Function, ::Type{T1}, ::Type{T2}) = DataRS
-result_type{T1<:DataRS, T2}(fn::Function, ::Type{T1}, ::Type{T2}) = DataRS
-result_type{T1, T2<:DataRS}(fn::Function, ::Type{T1}, ::Type{T2}) = DataRS
+result_type(fn::Function, ::Type{T1}, ::Type{T2}) where {T1<:DataRS, T2<:DataRS} = DataRS
+result_type(fn::Function, ::Type{T1}, ::Type{T2}) where {T1<:DataRS, T2} = DataRS
+result_type(fn::Function, ::Type{T1}, ::Type{T2}) where {T1, T2<:DataRS} = DataRS
 
 #Reducting functions
 #-------------------------------------------------------------------------------
-result_type{T1<:Number}(CT::CastTypeRed, fn::Function, ::Type{DataRS{T1}}) = T1
-result_type{T}(CT::CastTypeRed, fn::Function, ::Type{DataRS{T}}) = DataRS
+result_type(CT::CastTypeRed, fn::Function, ::Type{DataRS{T1}}) where T1<:Number = T1
+result_type(CT::CastTypeRed, fn::Function, ::Type{DataRS{T}}) where T = DataRS
 
 
 #==eltype/valtype: Figure out result type for a function call with given arguments
@@ -38,7 +38,7 @@ Base.eltype(fn::Function, d1, d2::DataRS) =
 #Reducting functions
 #-------------------------------------------------------------------------------
 #Element type afer reducing fn on Array{Number}:
-Base.eltype{T<:Number}(CT::CastTypeRed, fn::Function, a::Vector{T}) = result_type(CT, fn, typeof(a))
+Base.eltype(CT::CastTypeRed, fn::Function, a::Vector{T}) where T<:Number = result_type(CT, fn, typeof(a))
 
 #Element type afer reducing fn on Array{DataF1}:
 function Base.eltype(CT::CastTypeRed, fn::Function, a::Array{DataF1})
@@ -78,7 +78,7 @@ function broadcastMD(CT::CastType1{Number,1}, fn::Function, d::DataRS, args...; 
 end
 
 #Data reducing fn(DataRS{Number}) - core: fn(Number):
-broadcastMD{T<:Number}(CT::CastTypeRed1{Number,1}, fn::Function, d::DataRS{T}, args...; kwargs...) =
+broadcastMD(CT::CastTypeRed1{Number,1}, fn::Function, d::DataRS{T}, args...; kwargs...) where T<:Number =
 	fn(d.elem, args...; kwargs...)
 
 #Data reducing fn(DataRS) - core: fn(Number):
@@ -94,7 +94,7 @@ end
 #Broadcast functions capable of operating only on a dataF1 value:
 #-------------------------------------------------------------------------------
 #fn(DataRS) - core: fn(DataF1):
-function broadcastMD{T}(CT::CastType1{DataF1,1}, fn::Function, d::DataRS{T}, args...; kwargs...)
+function broadcastMD(CT::CastType1{DataF1,1}, fn::Function, d::DataRS{T}, args...; kwargs...) where T
 	result = DataRS{T}(d.sweep)
 	for i in 1:length(d.sweep)
 		result.elem[i] = broadcastMD(CT, fn, d.elem[i], args...; kwargs...)
@@ -102,7 +102,7 @@ function broadcastMD{T}(CT::CastType1{DataF1,1}, fn::Function, d::DataRS{T}, arg
 	return result
 end
 #fn(???, DataRS) - core: fn(???, DataF1):
-function broadcastMD{T}(CT::CastType1{DataF1,2}, fn::Function, dany1, d::DataRS{T}, args...; kwargs...)
+function broadcastMD(CT::CastType1{DataF1,2}, fn::Function, dany1, d::DataRS{T}, args...; kwargs...) where T
 	result = DataRS{T}(d.sweep)
 	for i in 1:length(d.sweep)
 		result.elem[i] = broadcastMD(CT, fn, dany1, d.elem[i], args...; kwargs...)
@@ -111,7 +111,7 @@ function broadcastMD{T}(CT::CastType1{DataF1,2}, fn::Function, dany1, d::DataRS{
 end
 
 #Data reducing fn(DataRS) - core: fn(Number):
-broadcastMD{T<:Number}(CT::CastTypeRed1{DataF1,1}, fn::Function, d::DataRS{T}, args...; kwargs...) =
+broadcastMD(CT::CastTypeRed1{DataF1,1}, fn::Function, d::DataRS{T}, args...; kwargs...) where T<:Number =
 	fn(DataF1(d.sweep.v, d.elem), args...; kwargs...)
 
 #Data reducing fn(DataRS) - core: fn(Number):
@@ -167,8 +167,8 @@ end
 #-------------------------------------------------------------------------------
 const DF1_DRS = Union{DataF1,DataRS}
 #fn(DataRS, DataRS) - core: fn(DataF1, DataF1):
-function broadcastMD{T1<:DF1_DRS,T2<:DF1_DRS}(CT::CastType2{DataF1,1,DataF1,2}, fn::Function,
-	d1::DataRS{T1}, d2::DataRS{T2}, args...; kwargs...)
+function broadcastMD(CT::CastType2{DataF1,1,DataF1,2}, fn::Function,
+	d1::DataRS{T1}, d2::DataRS{T2}, args...; kwargs...) where {T1<:DF1_DRS,T2<:DF1_DRS}
 	if d1.sweep != d2.sweep
 		msg = "Sweeps do not match (not yet supported):"
 		throw(ArgumentError(string(msg, "\n", d1.sweep, "\n", d2.sweep)))
@@ -179,8 +179,8 @@ function broadcastMD{T1<:DF1_DRS,T2<:DF1_DRS}(CT::CastType2{DataF1,1,DataF1,2}, 
 	end
 	return result
 end
-function broadcastMD{T1<:Number,T2<:Number}(CT::CastType2{DataF1,1,DataF1,2}, fn::Function,
-	d1::DataRS{T1}, d2::DataRS{T2}, args...; kwargs...)
+function broadcastMD(CT::CastType2{DataF1,1,DataF1,2}, fn::Function,
+	d1::DataRS{T1}, d2::DataRS{T2}, args...; kwargs...) where {T1<:Number,T2<:Number}
 
 	if d1.sweep.id != d2.sweep.id
 		msg = "Sweep ids do not match:"
@@ -188,18 +188,18 @@ function broadcastMD{T1<:Number,T2<:Number}(CT::CastType2{DataF1,1,DataF1,2}, fn
 	end
 	return fn(DataF1(d1.sweep.v, d1.elem), DataF1(d2.sweep.v, d2.elem), args...; kwargs...)
 end
-function broadcastMD{T1<:Number}(CT::CastType2{DataF1,1,DataF1,2}, fn::Function,
-	d1::DataRS{T1}, d2::DataMD, args...; kwargs...)
+function broadcastMD(CT::CastType2{DataF1,1,DataF1,2}, fn::Function,
+	d1::DataRS{T1}, d2::DataMD, args...; kwargs...) where T1<:Number
 	return broadcastMD(CT, fn, DataF1(d1.sweep.v, d1.elem), d2, args...; kwargs...)
 end
-function broadcastMD{T2<:Number}(CT::CastType2{DataF1,1,DataF1,2}, fn::Function,
-	d1::DataMD, d2::DataRS{T2}, args...; kwargs...)
+function broadcastMD(CT::CastType2{DataF1,1,DataF1,2}, fn::Function,
+	d1::DataMD, d2::DataRS{T2}, args...; kwargs...) where T2<:Number
 	return broadcastMD(CT, fn, d1, DataF1(d2.sweep.v, d2.elem), args...; kwargs...)
 end
 
 #fn(DataRS, DataF1) - core: fn(DataF1, DataF1):
-function broadcastMD{TRS<:DF1_DRS}(CT::CastType2{DataF1,1,DataF1,2}, fn::Function,
-	d1::DataRS{TRS}, d2::DataF1, args...; kwargs...)
+function broadcastMD(CT::CastType2{DataF1,1,DataF1,2}, fn::Function,
+	d1::DataRS{TRS}, d2::DataF1, args...; kwargs...) where TRS<:DF1_DRS
 	result = DataRS{eltype(fn, d1, d2)}(d1.sweep)
 	for i in 1:length(d1.sweep)
 		result.elem[i] = broadcastMD(CT, fn, d1.elem[i], d2, args...; kwargs...)
@@ -207,8 +207,8 @@ function broadcastMD{TRS<:DF1_DRS}(CT::CastType2{DataF1,1,DataF1,2}, fn::Functio
 	return result
 end
 #fn(DataF1, DataRS) - core: fn(DataF1, DataF1):
-function broadcastMD{TRS<:DF1_DRS}(CT::CastType2{DataF1,1,DataF1,2}, fn::Function,
-	d1::DataF1, d2::DataRS{TRS}, args...; kwargs...)
+function broadcastMD(CT::CastType2{DataF1,1,DataF1,2}, fn::Function,
+	d1::DataF1, d2::DataRS{TRS}, args...; kwargs...) where TRS<:DF1_DRS
 	result = DataRS{eltype(fn, d1, d2)}(d2.sweep)
 	for i in 1:length(d2.sweep)
 		result.elem[i] = broadcastMD(CT, fn, d1, d2.elem[i], args...; kwargs...)

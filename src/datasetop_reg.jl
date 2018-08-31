@@ -133,7 +133,7 @@ end; end #CODEGEN---------------------------------------------------------------
 
 const _basefn2 = [:(Base.$fn) for fn in [
 	:max, :min,
-	:atan2, :hypot,
+	:atan, :hypot,
 ]]
 
 for fn in _basefn2; @eval begin #CODEGEN----------------------------------------
@@ -152,10 +152,8 @@ end; end #CODEGEN---------------------------------------------------------------
 #==Support reducing/collpasing Base.functions:
 ===============================================================================#
 const _baseredfn1 = [:(Base.$fn) for fn in [
-	:maximum, :minimum, :minabs, :maxabs,
+	:maximum, :minimum,
 	:prod, :sum,
-	:mean, :median, :middle,
-	:std, :var,
 ]]
 
 for fn in _baseredfn1; @eval begin #CODEGEN-------------------------------------
@@ -165,6 +163,24 @@ $fn(d::DataF1) = ($fn)(d.y)
 
 #Everything else:
 $fn(d::DataMD) = broadcastMD(CAST_BASEOPRED1, $fn, d)
+
+end; end #CODEGEN---------------------------------------------------------------
+
+
+#==Support reducing/collpasing Statistics.functions:
+===============================================================================#
+const _statredfn1 = [:(Statistics.$fn) for fn in [
+	:mean, :median, :middle,
+	:std, :var,
+]]
+
+for fn in _statredfn1; @eval begin #CODEGEN-------------------------------------
+
+#fn(DataF1):
+$fn(d::DataF1) = ($fn)(d.y)
+
+#Everything else:
+$fn(d::DataMD) = broadcastMD(CAST_BASEOPRED1, ($fn), d)
 
 end; end #CODEGEN---------------------------------------------------------------
 

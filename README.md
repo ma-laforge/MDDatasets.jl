@@ -79,8 +79,8 @@ TODO: Provide a means to re-order dimensions.
 
   - `+, -, *, /,`
 <br>`max, min,`
-<br>`atan2, hypot,`
-<br>`maximum, minimum, minabs, maxabs,`
+<br>`atan, hypot,`
+<br>`maximum, minimum,`
 <br>`prod, sum,`
 <br>`mean, median, middle,`
 
@@ -206,7 +206,7 @@ One can create a relatively complex Recursive-Sweep (DataRS) dataset using the f
 
 Extensive compatibility testing of MDDatasets.jl has not been performed.  The module has been tested using the following environment(s):
 
-- Linux / Julia-0.6.0-rc1 (64-bit)
+- Linux / Julia-0.7.0 (64-bit)
 
 ## Disclaimer
 

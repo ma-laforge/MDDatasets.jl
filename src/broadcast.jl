@@ -24,12 +24,12 @@ struct CastType2{TCAST1, POS1, TCAST2, POS2} <: CastType; end
 struct CastTypeRed2{TCAST1, POS1, TCAST2, POS2} <: CastTypeRed; end #Reducing function (DataF1->Number)
 
 #Constructors:
-CastType{T}(::Type{T}, pos::Int) = CastType1{T, pos}()
-CastType{T1,T2}(::Type{T1}, pos1::Int, ::Type{T2}, pos2::Int) =
+CastType(::Type{T}, pos::Int) where T = CastType1{T, pos}()
+CastType(::Type{T1}, pos1::Int, ::Type{T2}, pos2::Int) where {T1,T2} =
 	CastType2{T1, pos1, T2, pos2}()
 
-CastTypeRed{T}(::Type{T}, pos::Int) = CastTypeRed1{T, pos}()
-CastTypeRed{T1,T2}(::Type{T1}, pos1::Int, ::Type{T2}, pos2::Int) =
+CastTypeRed(::Type{T}, pos::Int) where T = CastTypeRed1{T, pos}()
+CastTypeRed(::Type{T1}, pos1::Int, ::Type{T2}, pos2::Int) where {T1,T2} =
 	CastTypeRed2{T1, pos1, T2, pos2}()
 
 
@@ -66,16 +66,16 @@ const CAST_MDRED2 = CastTypeRed(DataF1, 1, DataF1, 2)
 =#
 #-------------------------------------------------------------------------------
 
-result_type{T1}(fn::Function, ::Type{T1}) = T1 #In=out... wrong with functions like sin(Int)=>Float64
-result_type{T1<:DataF1}(fn::Function, ::Type{T1}) = DataF1
+result_type(fn::Function, ::Type{T1}) where T1 = T1 #In=out... wrong with functions like sin(Int)=>Float64
+result_type(fn::Function, ::Type{T1}) where T1<:DataF1 = DataF1
 
 
-result_type{T1<:Number, T2<:Number}(fn::Function, ::Type{T1}, ::Type{T2}) = promote_type(T1, T2)
-result_type{T1<:DataF1, T2<:DataF1}(fn::Function, ::Type{T1}, ::Type{T2}) = DataF1
-result_type{T1<:DataF1, T2<:Number}(fn::Function, ::Type{T1}, ::Type{T2}) = DataF1
-result_type{T1<:Number, T2<:DataF1}(fn::Function, ::Type{T1}, ::Type{T2}) = DataF1
+result_type(fn::Function, ::Type{T1}, ::Type{T2}) where {T1<:Number, T2<:Number} = promote_type(T1, T2)
+result_type(fn::Function, ::Type{T1}, ::Type{T2}) where {T1<:DataF1, T2<:DataF1} = DataF1
+result_type(fn::Function, ::Type{T1}, ::Type{T2}) where {T1<:DataF1, T2<:Number} = DataF1
+result_type(fn::Function, ::Type{T1}, ::Type{T2}) where {T1<:Number, T2<:DataF1} = DataF1
 
-result_type{TX,TY}(CT::CastTypeRed, fn::Function, ::Type{DataF1{TX,TY}}) = TY
+result_type(CT::CastTypeRed, fn::Function, ::Type{DataF1{TX,TY}}) where {TX,TY} = TY
 
 
 #==eltype/valtype: Figure out result type for a function call with given arguments

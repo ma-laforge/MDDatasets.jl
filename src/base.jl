@@ -52,18 +52,18 @@ end
 #DataF1{TX<:Number, TY<:Number}(::Type{TX}, ::Type{TY}) = DataF1(TX[], TY[]) #Empty dataset
 
 #Create a function of 1 argument from x-values & function of 1 argument:
-function DataF1{TX<:Number}(x::Vector{TX}, y::Function)
+function DataF1(x::Vector{TX}, y::Function) where TX<:Number
 	ytype = typeof(y(x[1]))
 	DataF1(x, ytype[y(elem) for elem in x])
 end
 
-function DataF1(x::Range, y::Function)
+function DataF1(x::AbstractRange, y::Function)
 	ensureincreasingx(x)
 	return DataF1(collect(x), y)
 end
 
 #Build a DataF1 object from a x-value range (make y=x):
-function DataF1(x::Range)
+function DataF1(x::AbstractRange)
 	ensureincreasingx(x)
 	return DataF1(collect(x), collect(x))
 end
@@ -82,15 +82,15 @@ const DF1_Num = Union{DataF1,Number}
 
 #==Type promotions
 ===============================================================================#
-Base.promote_rule{T1<:DataF1, T2<:Number}(::Type{T1}, ::Type{T2}) = DataF1
-Base.promote_rule{TX1,TX2,TY1,TY2}(::Type{DataF1{TX1,TY1}},::Type{DataF1{TX2,TY2}}) =
+Base.promote_rule(::Type{T1}, ::Type{T2}) where {T1<:DataF1, T2<:Number} = DataF1
+Base.promote_rule(::Type{DataF1{TX1,TY1}},::Type{DataF1{TX2,TY2}}) where {TX1,TX2,TY1,TY2} =
 	DataF1{promote_type(TX1,TX2),promote_type(TY1,TY2)}
 
 #A way to ignore void types in promote operation:
 promote_type_nonvoid(T::Type) = T
-promote_type_nonvoid(::Type{Void}, ::Type{Void}) = Void
-promote_type_nonvoid(T1::Type, ::Type{Void}) = T1
-promote_type_nonvoid(::Type{Void}, T2::Type) = T2
+promote_type_nonvoid(::Type{Nothing}, ::Type{Nothing}) = Nothing
+promote_type_nonvoid(T1::Type, ::Type{Nothing}) = T1
+promote_type_nonvoid(::Type{Nothing}, T2::Type) = T2
 promote_type_nonvoid(T1::Type, T2::Type) = promote_type(T1,T2)
 promote_type_nonvoid(T1::Type, args...) =
 	promote_type_nonvoid(T1, promote_type_nonvoid(args...))
@@ -104,7 +104,7 @@ promote_type_nonvoid(T1::Type, args...) =
    -Want to support ONLY base data types & leaf types (T<:LeafDS)
 	-Want to support leaf types like DataF1 in GENERIC fashion
     (support DataF1[] ONLY - not concrete versions of DataF1{X,Y}[] ==#
-elemallowed{T}(::Type{DataMD}, ::Type{T}) = false #By default
+elemallowed(::Type{DataMD}, ::Type{T}) where T = false #By default
 elemallowed(::Type{DataMD}, ::Type{DataFloat}) = true
 elemallowed(::Type{DataMD}, ::Type{DataInt}) = true
 elemallowed(::Type{DataMD}, ::Type{DataComplex}) = true
@@ -129,7 +129,7 @@ function ensureincreasingx(d::DataF1)
 		ArgumentError("DataF1.x must be in increasing order."))
 end
 
-function ensureincreasingx(x::Range)
+function ensureincreasingx(x::AbstractRange)
 	ensure(isincreasing(x),
 		ArgumentError("Data must be ordered with increasing x"))
 end
@@ -161,7 +161,7 @@ end
 #==Helper functions
 ===============================================================================#
 #Substitute void values with default:
-substvoid(::Void, dflt) = dflt
+substvoid(::Nothing, dflt) = dflt
 substvoid(v, dflt) = v
 
 
@@ -212,7 +212,7 @@ end
 #    -Uses linear interpolation
 #    -Assumes value is zero when out of bounds
 #    -TODO: binary search
-function value{TX<:Number, TY<:Number}(d::DataF1{TX, TY}; x::Number=0)
+function value(d::DataF1{TX, TY}; x::Number=0) where {TX<:Number, TY<:Number}
 	validate(d) #Expensive, but might avoid headaches
 	nd = length(d) #Somewhat expensive
 	RT = promote_type(TX, TY) #For type stability
@@ -238,7 +238,7 @@ end
 #==Apply fn(d1,d2); where {d1,d2} ∈ DataF1 have independent (but sorted) x-values
 ===============================================================================#
 
-function applydisjoint{TX<:Number, TY1<:Number, TY2<:Number}(fn::Function, d1::DataF1{TX,TY1}, d2::DataF1{TX,TY2})
+function applydisjoint(fn::Function, d1::DataF1{TX,TY1}, d2::DataF1{TX,TY2}) where {TX<:Number, TY1<:Number, TY2<:Number}
 	ensure(false, ArgumentError("Currently no support for disjoint datasets"))
 end
 
@@ -247,7 +247,7 @@ end
 #   -Uses linear interpolation
 #   -Do not use "map", because this is more complex than one-to-one mapping
 #   -Assumes ordered x-values
-function apply{TX<:Number, TY1<:Number, TY2<:Number}(fn::Function, d1::DataF1{TX,TY1}, d2::DataF1{TX,TY2})
+function apply(fn::Function, d1::DataF1{TX,TY1}, d2::DataF1{TX,TY2}) where {TX<:Number, TY1<:Number, TY2<:Number}
 	validate(d1); validate(d2); #Expensive, but might avoid headaches
 	zero1 = zero(TY1); zero2 = zero(TY2)
 	npts = length(d1)+length(d2)+1 #Allocate for worse case

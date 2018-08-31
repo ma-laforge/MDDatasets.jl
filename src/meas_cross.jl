@@ -65,8 +65,8 @@ end
 function icross(d::DataF1, nmax::Integer, xstart::Real, allow::CrossType)
 	#TODO: make into function if can force inline
 	#(SGNTOXINGDIR >> (1+Int(sgncur)))&0x3 returns the type of xing:
-	const SGNTOXINGDIR = XINGTYPE_FALL|XINGTYPE_RISE<<2
-	const EMPTYRESULT = Limits1D{Int}[]
+	SGNTOXINGDIR = XINGTYPE_FALL|XINGTYPE_RISE<<2 #WANTCONST
+	EMPTYRESULT = Limits1D{Int}[] #WANTCONST
 	allow = allow.v #Get value
 
 	validate(d); #Expensive, but might avoid headaches
@@ -75,8 +75,8 @@ function icross(d::DataF1, nmax::Integer, xstart::Real, allow::CrossType)
 	if ny < 1; return EMPTYRESULT; end
 	xstart = max(x[1], xstart) #Simplify algorithm below
 	if xstart > x[end]; return EMPTYRESULT; end
-	nmax = nmax<1? ny: min(nmax, ny)
-	idx = Vector{Limits1D{Int}}(nmax) #resultant array of indices
+	nmax = nmax<1 ? ny : min(nmax, ny)
+	idx = Vector{Limits1D{Int}}(undef, nmax) #resultant array of indices
 	n = 0 #Index into idx[]
 	i = 1 #Index into x/y[]
 	while x[i] < xstart #Fast-forward to start point
@@ -128,8 +128,8 @@ function icross(d::DataF1, nmax::Integer, xstart::Real, allow::CrossType)
 		if sgncur != sgnprev
 			xingdir = (SGNTOXINGDIR >> (1+Int(sgncur)))&0x3
 			if posfirstzero > 0
-				xingtype = (posfirstzero == i-1? XINGTYPE_SING: XINGTYPE_FLAT)
-				xingtype |= (0 == sgnenter+sgncur? XINGTYPE_THRU: XINGTYPE_REV)
+				xingtype = (posfirstzero == i-1 ? XINGTYPE_SING : XINGTYPE_FLAT)
+				xingtype |= (0 == sgnenter+sgncur ? XINGTYPE_THRU : XINGTYPE_REV)
 				xingtype |= xingdir
 				if allow & xingtype == xingtype
 					n+=1
@@ -169,11 +169,11 @@ end
 
 #TODO: what about infinitiy? convert(Float32,NaN)
 #-------------------------------------------------------------------------------
-function xveccross{TX<:Number, TY<:Number}(d::DataF1{TX,TY}, nmax::Integer,
-	xstart::Real, allow::CrossType)
+function xveccross(d::DataF1{TX,TY}, nmax::Integer,
+	xstart::Real, allow::CrossType) where {TX<:Number, TY<:Number}
 	idx = icross(d, nmax, xstart, allow)
 	TR = typeof(one(promote_type(TX,TY))/2) #TODO: is there better way?
-	result = Vector{TR}(length(idx))
+	result = Vector{TR}(undef, length(idx))
 	for i in 1:length(idx)
 		rng = idx[i]
 		x1 = d.x[rng.min]; y1 = d.y[rng.min]
@@ -214,27 +214,25 @@ end
 
 #TODO: Make more efficient (don't use "value")
 #-------------------------------------------------------------------------------
-function ycross{TX<:Number, TY<:Number, T<:DF1_Num}(
-	d1::DataF1{TX,TY}, d2::T; nmax::Integer=0,
-	xstart::Real=-Inf, allow::CrossType=CrossType())
+function ycross(d1::DataF1{TX,TY}, d2::T; nmax::Integer=0, xstart::Real=-Inf,
+	allow::CrossType=CrossType()) where {TX<:Number, TY<:Number, T<:DF1_Num}
 	x = xveccross(d1-d2, nmax, xstart, allow)
 	TR = typeof(one(promote_type(TX,TY))/2) #TODO: is there better way?
-	y = Vector{TR}(length(x))
+	y = Vector{TR}(undef, length(x))
 	for i in 1:length(x)
 		y[i] = value(d1, x=x[i])
 	end
 	return DataF1(x, y)
 end
-function ycross{T<:DF1_Num}(::DS{:event}, d1::DataF1, d2::T, args...; kwargs...)
+function ycross(::DS{:event}, d1::DataF1, d2::T, args...; kwargs...) where T<:DF1_Num
 	d = ycross(args...;kwargs...)
 	return DataF1(collect(1:length(d.x)), d.y)
 end
 
 #ycross1: return a single crossing point (new name for type stability)
 #-------------------------------------------------------------------------------
-function ycross1{TX<:Number, TY<:Number, T<:DF1_Num}(
-	d1::DataF1{TX,TY}, d2::T; n::Integer=1,
-	xstart::Real=-Inf, allow::CrossType=CrossType())
+function ycross1(d1::DataF1{TX,TY}, d2::T; n::Integer=1,	xstart::Real=-Inf,
+	allow::CrossType=CrossType()) where {TX<:Number, TY<:Number, T<:DF1_Num}
 	n = max(n, 1)
 	x = xveccross(d1-d2, n, xstart, allow)
 	TR = typeof(one(promote_type(TX,TY))/2) #TODO: is there better way?

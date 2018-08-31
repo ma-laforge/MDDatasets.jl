@@ -22,23 +22,23 @@ mutable struct DataRS{T} <: DataMD
 end
 
 #Shorthand (because default (non-parameterized) constructor was overwritten):
-DataRS{T}(sweep::PSweep, elem::Vector{T}) = DataRS{T}(sweep, elem)
+DataRS(sweep::PSweep, elem::Vector{T}) where T = DataRS{T}(sweep, elem)
 
-elemallowed{T}(::Type{DataRS}, t::Type{T}) = elemallowed(DataMD, t) #Allow basic types
+elemallowed(::Type{DataRS}, t::Type{T}) where T = elemallowed(DataMD, t) #Allow basic types
 elemallowed(::Type{DataRS}, ::Type{DataRS}) = true #Also allow recursive structures
 
 #Generate empty DataRS structure:
-(::Type{DataRS{T}}){T}(sweep::PSweep) = DataRS{T}(sweep, Array{T}(length(sweep)))
+(::Type{DataRS{T}})(sweep::PSweep) where T = DataRS{T}(sweep, Array{T}(undef, length(sweep)))
 
 
 #==Type promotions
 ===============================================================================#
-Base.promote_rule{T1<:DataRS, T2<:Number}(::Type{T1}, ::Type{T2}) = DataRS
+Base.promote_rule(::Type{T1}, ::Type{T2}) where {T1<:DataRS, T2<:Number} = DataRS
 
 
 #==Accessor functions
 ===============================================================================#
-Base.eltype{T}(d::DataRS{T}) = T
+Base.eltype(d::DataRS{T}) where T = T
 Base.length(d::DataRS) = length(d.elem)
 
 
@@ -52,8 +52,8 @@ function Base.fill!(fn::Function, d::DataRS)
 	end
 	return d
 end
-Base.fill{T}(fn::Function, ::Type{DataRS{T}}, sweep::PSweep) =
-	fill!(fn, DataRS(sweep, Array{T}(length(sweep))))
+Base.fill(fn::Function, ::Type{DataRS{T}}, sweep::PSweep) where T =
+	fill!(fn, DataRS(sweep, Array{T}(undef, length(sweep))))
 Base.fill(fn::Function, ::Type{DataRS}, sweep::PSweep) = fill(fn, DataRS{DataRS}, sweep)
 
 
@@ -71,14 +71,14 @@ end
 #-------------------------------------------------------------------------------
 
 #Deal with non-leaf elements, once the sweep value is found:
-function _parameter{T}(d::DataRS{DataRS}, sweepid::String, sweepval::T)
+function _parameter(d::DataRS{DataRS}, sweepid::String, sweepval::T) where T
 	_ensuresweepunique(d, sweepid)
 	elem = DataRS[_parameter(d.elem[i], sweepid, sweepval) for i in 1:length(d.sweep)]
 	return DataRS(d.sweep, elem)
 end
 
 #Deal with leaf elements, once the sweep value is found:
-function _parameter{T}(d::DataRS, sweepid::String, sweepval::T)
+function _parameter(d::DataRS, sweepid::String, sweepval::T) where T
 	_ensuresweepunique(d, sweepid)
 	elem = T[sweepval for i in 1:length(d.sweep)]
 	return DataRS(d.sweep, elem)
@@ -140,7 +140,7 @@ function printDataRSelem(io::IO, ds::DataRS, idx::Int, indent::String)
 	end
 end
 #Print next level of recursive DataRS:
-function printDataRSelem{T<:DataRS}(io::IO, ds::DataRS{T}, idx::Int, indent::String)
+function printDataRSelem(io::IO, ds::DataRS{T}, idx::Int, indent::String) where T<:DataRS
 	println(io)
 	if isassigned(ds.elem, idx)
 		printDataRS(io, ds.elem[idx], indent)

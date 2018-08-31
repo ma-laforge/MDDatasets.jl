@@ -1,9 +1,14 @@
 #MDDatasets: Tools to store/manipulate multi-dimensional data
 #-------------------------------------------------------------------------------
-__precompile__()
+#=
+TAGS:
+	#WANTCONST, HIDEWARN_0.7
+=#
+
 module MDDatasets
 
 import Base: values
+using Statistics
 
 #==Suggested scalar data types
 	-Use concrete types of the largest size natively supported by processor
