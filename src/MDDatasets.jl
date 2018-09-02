@@ -1,5 +1,6 @@
 #MDDatasets: Tools to store/manipulate multi-dimensional data
 #-------------------------------------------------------------------------------
+__precompile__(true)
 #=
 TAGS:
 	#WANTCONST, HIDEWARN_0.7
