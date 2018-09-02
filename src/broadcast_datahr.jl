@@ -123,13 +123,13 @@ function _broadcast(::Type{T}, s::Vector{PSweep}, fn::Function, args...; kwargs.
 			bargs[i] = args[i]
 		end
 	end
-	bkwargs = Vector{Any}(undef, length(kwargs)) #Broadcasted version of kwargs
-	for i in 1:length(kwargs)
-		(k,v) = kwargs[i]
+	bkwargs = Vector{Pair}(undef, length(kwargs)) #Broadcasted version of kwargs
+	for (i, kv) in enumerate(kwargs)
+		(k,v) = kv
 		if typeof(v)<:DataMD
-			bkwargs[i] = tuple(k, broadcastMDSweep(s, v))
+			bkwargs[i] = (k => broadcastMDSweep(s, v))
 		else
-			bkwargs[i] = kwargs[i]
+			bkwargs[i] = kv
 		end
 	end
 	result = DataHR{T}(s) #Create empty result
@@ -142,11 +142,11 @@ function _broadcast(::Type{T}, s::Vector{PSweep}, fn::Function, args...; kwargs.
 				curargs[j] = bargs[j]
 			end
 		end
-		curkwargs = Vector{Any}(undef, length(bkwargs))
+		curkwargs = Vector{Pair}(undef, length(bkwargs))
 		for j in 1:length(bkwargs)
 			(k,v) = bkwargs[j]
 			if typeof(v) <: DataHR
-				curkwargs[j] = tuple(k, v.elem[i])
+				curkwargs[j] = (k => v.elem[i])
 			else
 				curkwargs[j] = bkwargs[j]
 			end

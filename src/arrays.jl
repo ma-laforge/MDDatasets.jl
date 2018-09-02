@@ -70,7 +70,7 @@ end
 #Create vector with data right-shifted by n (padded with 0s)
 function _rshift(v::Vector, n::Int)
 	@assert(n >= 0, "Cannot shfit by a negative number")
-	result = zeros(v)
+	result = zero(v)
 	for i in length(v):-1:(1+n)
 		result[i] = v[i-n]
 	end

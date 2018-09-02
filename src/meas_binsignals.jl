@@ -48,7 +48,7 @@ Inputs
    delaymin: Minimum circuit delay used to align clock & q edges
 =#
 function _measck2q(xingck::Vector, xingq::Vector, delaymin::Real)
-	xq = copy(xingq) - delaymin
+	xq = copy(xingq) .- delaymin
 	qlen = length(xq) #Maximum # of q-events
 	x = copy(xingq) #Allocate space for delay starts
 	Δ = copy(xingq) #Allocate space for delays

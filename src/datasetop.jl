@@ -63,7 +63,7 @@ end
 function iinteg(d::DataF1)
 	#meanadj ≜ (vi+(vi+1))/2
 	area = meanadj(d.y).*delta(d.x)
-	return DataF1(d.x, vcat(zero(d.y[]), cumsum(area)))
+	return DataF1(d.x, vcat(zero(eltype(d.y)), cumsum(area)))
 end
 
 #Definite integral:
@@ -139,7 +139,7 @@ function sample(d::DataF1{TX,TY}, x::AbstractRange) where {TX<:Number, TY<:Numbe
 		return DataF1(zeros(eltype(x),0), zeros(eltype(d.y),0))
 	end
 	n = length(x)
-	y = Vector{TY}(n)
+	y = Vector{TY}(undef, n)
 	x = collect(x) #Need it in this form anyways
 	dx = d.x #shortcut
 	_dx = dx[1]; dx_ = dx[end]
