@@ -11,6 +11,8 @@ abstract type LeafDS <: DataMD end #Leaf dataset
 #==Helper types (TODO: move to somewhere else?)
 ===============================================================================#
 
+struct MDCUST; end #Custom type used for defining special functions with same name.
+
 #For type stability.  Identifies result as having event count in x-axis
 const Event = DS{:event}()
 

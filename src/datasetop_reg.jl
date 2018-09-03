@@ -112,18 +112,22 @@ $fn(d::DataMD, args...; kwargs...) = broadcastMD(CAST_BASEOP1, $fn, d, args...; 
 
 end; end #CODEGEN---------------------------------------------------------------
 
-#1-argument Base.functions that apply on arrays (no "." to broadcast):
-const _basefn1arr = [:(Base.$fn) for fn in [
+#zeros & one function... must use "fill" on functions:
+const _onezerofn1 = [:(Base.$fn) for fn in [
 	:zeros, :ones
 ]]
 
-for fn in vcat(_basefn1arr); @eval begin #CODEGEN---------------------
+#Define old-ish "ones"/"zeros" syntax to simplify definition of ones/zeros:
+Base.ones(::MDCUST, a) = fill(Base.one(eltype(a)), size(a))
+Base.zeros(::MDCUST, a) = fill(Base.zero(eltype(a)), size(a))
+
+for fn  in vcat(_onezerofn1); @eval begin #CODEGEN---------------------
 
 #fn(DataF1)
-$fn(d::DataF1, args...; kwargs...) = DataF1(d.x, $fn(d.y, args...; kwargs...))
+$fn(d::DataF1) = DataF1(d.x, $fn(MDCUST(), d.y))
 
 #Everything else:
-$fn(d::DataMD, args...; kwargs...) = broadcastMD(CAST_BASEOP1, $fn, d, args...; kwargs...)
+$fn(d::DataMD) = broadcastMD(CAST_BASEOP2, $fn, MDCUST(), d)
 
 end; end #CODEGEN---------------------------------------------------------------
 
