@@ -1,8 +1,12 @@
 # MDDatasets.jl: Multi-Dimensional Datasets
+## [:heavy_exclamation_mark: Core of C-Data Analysis/Visualization Suite](https://github.com/ma-laforge/CData.jl)
 
 ## Description
 
-The MDDatasets.jl module provides tools to simplify manipulation of multi-dimensional datasets.
+The MDDatasets.jl module provides tools to simplify manipulation of multi-dimensional datasets.  MDDatasets.jl implements the core algorithms of the [C-Data Analysis/Visualization Suite](https://github.com/ma-laforge/CData.jl)
+
+| <img src="https://github.com/ma-laforge/FileRepo/blob/master/SignalProcessing/sampleplots/demo15.png" width="850"> |
+| :---: |
 
 ### Functions Of 1 Argument (`DataF1`) & Interpolation
 
@@ -211,5 +215,3 @@ Extensive compatibility testing of MDDatasets.jl has not been performed.  The mo
 ## Disclaimer
 
 The MDDatasets.jl module is not yet mature.  Expect significant changes.
-
-This software is provided "as is", with no guarantee of correctness.  Use at own risk.
