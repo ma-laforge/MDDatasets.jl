@@ -134,6 +134,15 @@ ON CONDITION: Only if this interface does not mess up type stability.
 meas(:xcross, Event, d1)
 ==#
 
+
+#==Initialization
+===============================================================================#
+function __init__()
+	show(:HACK_SHOWTOUNFREEZE) #Not sure why show unfreezes dependent modules (those using this one)
+	println() #newline
+	return
 end
+
+end #MDDatasets
 
 #Last line
