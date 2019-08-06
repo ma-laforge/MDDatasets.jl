@@ -26,26 +26,24 @@ gets simplified to:
 
 NOTE: When dealing with complex algorithms, this simplification is rearkably quite significant.
 
-### Multi-Dimensional Datasets (`DataHR`, `DataRS`) & Broadcasting
+### Multi-Dimensional Datasets (`DataRS`) & Broadcasting
 
-In order to identify trends, or simply to verify the repeatability of a process, one often needs to perform the same operation on multiple "experiments".  This module provides two types that store/organize/access experiment data in a convenient fashion:
+In order to identify trends, or simply to verify the repeatability of a process, one often needs to perform the same operation on multiple "experiments".  This module provides the `DataRS` type to store/organize/access experiment data in a convenient fashion.
 
-- **`DataHR` (Hyper-Rectangle)**: Collects simpler data elements (like `DataF1`) into a n-dimensional array.  Each element in `DataHR` is used to store the result of an "experiment", and each array dimension represents an *independent* control variable that was varied (swept).
-
-- **`DataRS` (Recursive Sweep)**: Collects simpler data elements (like `DataF1`) into a recursive data structure.  Each `DataRS` element is used to store the results on an "experiment" (or collection of experiments) where a control variable was varied (swept).  Due to the recursive nature of `DataRS`, each "sweep" can potentially represent a control variable that is *dependent* on a previous "sweep".
+As a side-note, `DataRS` collects simpler data elements (like `DataF1` or simple scalar values) into a recursive data structure.  Each `DataRS` element is used to store the results on an "experiment" (or collection of experiments) where a control variable was varied (swept).  Due to the recursive nature of `DataRS`, each "sweep" can potentially represent a control variable that is *dependent* on a previous "sweep".
 
 #### Broadcast Features
 
-Operations performed on multi-dimensional data sets (`DataHR` and `DataRS`) will automatically be broadcast to each element of the dataset ([see Known Limitations](#KnownLimitations)).
+Operations performed on multi-dimensional data sets (`DataRS`) will automatically be broadcast to each element of the dataset ([see Known Limitations](#KnownLimitations)).
 
-Explicit looping over `DataHR` & `DataRS` structures is therefore typically not required.  Many algorithms can be used unmodified, even after changing the set of experimental points.
+Explicit looping over `DataRS` structures is therefore typically not required.  Many algorithms can be used unmodified, even after changing the set of experimental points.
 
-By default, reducing functions (like `maximum`, `minimum`, or `mean(::Vector) => Scalar`) will operate on `DataHR/DataRS` structures by collapsing the inner-most dimension:
+By default, reducing functions (like `maximum`, `minimum`, or `mean(::Vector) => Scalar`) will operate on `DataRS` structures by collapsing the inner-most dimension:
 
-	#Assuming sig -> DataHR{sweeps={supply, temp, ctrlVoltage}} of DataF1{x=time}
-	freqVctrl = mean(measfreq(sig)) #DataHR{sweeps={supply, temp, ctrlVoltage}}
-	maxfVtemp = maximum(freqVctrl) #DataHR{sweeps={supply, temp}}
-	maxfVsupply = maximum(maxfVtemp) #DataHR{sweeps={supply}}
+	#Assuming sig -> DataRS{sweeps={supply, temp, ctrlVoltage}} of DataF1{x=time}
+	freqVctrl = mean(measfreq(sig)) #DataRS{sweeps={supply, temp, ctrlVoltage}}
+	maxfVtemp = maximum(freqVctrl) #DataRS{sweeps={supply, temp}}
+	maxfVsupply = maximum(maxfVtemp) #DataRS{sweeps={supply}}
 
 As can be inferred from above, the sweep from the inner-most dimension can be thought as the x-coordinate of the data.  That is because subsequent operations will be applied along that dimension.
 
@@ -56,9 +54,9 @@ TODO: Provide a means to re-order dimensions.
 - **`DataInt, DataFloat, DataComplex`**: Useful aliases for largest practical data types on a platform (not yet platform dependent).
 - **`DataMD`**: Abastract data type for multi-dimensional data.
 - **`DataF1`**: Represents a function of 1 variable, y(x) using a x/y vector pair.
-- **`DataHR{DataF1/DataInt/DataFloat/DataComplex}`**: A hyper-rectangular organizaton of data.  Principally designed to collect massive datasets with *independent* control variables ([see examples](#SampleUsage_DataHR)).
+- **`DataHR{DataF1/DataInt/DataFloat/DataComplex}`**: ***DO NOT USE*** A hyper-rectangular organizaton of data.  Principally designed to collect massive datasets with *independent* control variables ([see examples](README_DataHR.md#SampleUsage_DataHR)).
 - **`DataRS{DataF1/DataInt/DataFloat/DataComplex}`**: A recursive-sweep organization of data.  Principally designed to collect massive datasets with *dependent* control variables([see examples](#SampleUsage_DataRS)).
-- **`PSweep`**: A parameter sweep (i.e. an independent control variable that generates experimental points in a `DataHR` dataset).
+- **`PSweep`**: A parameter sweep (i.e. an independent control variable that generates experimental points in a `DataRS/DataHR` dataset).
 
 ### Function Listing
 
@@ -153,31 +151,6 @@ Examples of the MDDatasets.jl capabilities can be found under the [test director
 
 More advanced usage examples can be found in the [sample directory](https://github.com/ma-laforge/SignalProcessing.jl/tree/master/sample) of the [SignalProcessing.jl module](https://github.com/ma-laforge/SignalProcessing.jl).
 
-<a name="SampleUsage_DataHR"></a>
-## Usage: Constructing A Hyper-Rectangular Dataset
-
-Assuming input data can be generated using the following:
-
-	t = DataF1((0:.01:10)*1e-9) #Time vector stored as a function of 1 argument
-
-	#NOTE: get_ydata returns type "DataF1" (stores data as a function of 1 argument):
-	get_ydata(t::DataF1, tbit, vdd, trise) = sin(2pi*t/tbit)*(trise/tbit)+vdd
-
-One can create a relatively complex Hyper-Rectangular (DataHR) dataset using the following pattern:
-
-	#Parametric sweep representing independent variables of an experiment:
-	sweeplist = PSweep[
-		PSweep("tbit", [1, 3, 9] * 1e-9)
-		PSweep("VDD", 0.9 * [0.9, 1, 1.1])
-		PSweep("trise_frac", [0.1, 0.15, 0.2]) #Rise time as fraction of bit rate
-	]
-
-	#Generate Hyper-Recangular dataset (DataHR, using dimensions from sweeplist)
-	datahr = fill(DataHR{DataF1}, sweeplist) do tbit, vdd, trise_frac
-		trise = trise_frac*tbit
-		return get_ydata(t, tbit, vdd, trise)
-	end
-
 <a name="SampleUsage_DataRS"></a>
 ## Usage: Constructing A Recursive-Sweep Dataset
 
@@ -194,6 +167,7 @@ One can create a relatively complex Recursive-Sweep (DataRS) dataset using the f
 		fill(DataRS, PSweep("VDD", 0.9 * [0.9, 1, 1.1])) do vdd
 
 			#Inner-most sweep: need to specify element type (DataF1):
+			#(Other (scalar) element types: DataInt/DataFloat/DataComplex)
 			fill(DataRS{DataF1}, PSweep("trise", [0.1, 0.15, 0.2] * tbit)) do trise
 				return get_ydata(t, tbit, vdd, trise)
 			end
