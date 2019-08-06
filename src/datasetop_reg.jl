@@ -31,7 +31,7 @@ Base.$op(d::DataMD) = broadcastMD(CAST_BASEOP1, Base.$op, d)
 
 end; end #CODEGEN---------------------------------------------------------------
 
-const _operators2 = Symbol[:-, :+, :/, :*, :>, :<, :>=, :<=, :!=, :(==)]
+const _operators2 = Symbol[:-, :+, :/, :*, :^, :>, :<, :>=, :<=, :!=, :(==)]
 
 for op in _operators2; @eval begin #CODEGEN--------------------------------------
 
