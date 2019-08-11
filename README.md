@@ -10,9 +10,79 @@ The MDDatasets.jl module provides tools to simplify manipulation of multi-dimens
 | <img src="https://github.com/ma-laforge/FileRepo/blob/master/SignalProcessing/sampleplots/demo15.png" width="850"> |
 | :---: |
 
+### Important Features
+- ***Single variable for (x,y) values:*** Stores both `(x,y)` values representing `y=f(x)` in a single, coherent structure.  This signficantly improves the simplicity & readability of your calculations.
+- ***Automatic Interpolation:*** Calculations will automatically be interpolated over `x` as if `y=f(x)` data represented a ***continuous*** function of x.
+- ***Automatic Broadcasting:*** Operations on multi-dimensional datasets will automatically be broadcasted (vectorized) over all subsets.  This significantly improves the readability of programs.
+
+## Concrete Example
+```
+using MDDatasets
+```
+
+Create `(x,y)` container pair, and call it “x”:
+```
+x = DataF1(0:.1:20)
+#NOTE: Both x & y coordinates of "x" object initialized as y = x = [supplied range]
+```
+
+“Extract” maximum x-value from data:
+```
+xmax = maximum(x)
+```
+
+Construct a normalized ramp dataset, `unity_ramp`:
+```
+unity_ramp = x/xmax
+```
+
+#### Observe `x` and `unity_ramp`
+(Note how `unity_ramp` is normalized such that maximum value is 1)
+<img src="https://github.com/ma-laforge/FileRepo/blob/master/MDDatasets/demo1/samplemdcalc_1.png">
+
+Compute `cos(kx)` & `ksinkx = cos'(kx)`:
+```
+coskx = cos((2.5pi/10)*x)
+ksinkx = deriv(coskx)
+```
+
+Compute ramps with different slopes using `unity_ramp` (previously computed):
+```
+#NOTE: for Inner-most sweep, we need to specify leaf element type (DataF1 here):
+ramp = fill(DataRS{DataF1}, PSweep("slope", [0, 0.5, 1, 1.5, 2])) do slope
+	return unity_ramp * slope
+end
+```
+
+NOTE: the above expression constructs a multi-dimensional `DataRS` structure, and fills it with `(x,y)` values for each of the desired parameter values (the slope).
+
+#### Observe `coskx`, `ksinkx` and `ramp`
+<img src="https://github.com/ma-laforge/FileRepo/blob/master/MDDatasets/demo1/samplemdcalc_2.png">
+
+
+Merge two datasets with different # of sweeps (`coskx` & `ramp`):
+```
+r_cos = coskx+ramp
+```
+
+#### Observe newly constructed `r_cos` dataset:
+<img src="https://github.com/ma-laforge/FileRepo/blob/master/MDDatasets/demo1/samplemdcalc_3.png">
+
+Shift all ramped cos(kx) waveforms to make them centered at their mid-points:
+```
+midval = (minimum(ramp) + maximum(ramp)) / 2
+c_cos = r_cos - midval #Shift by midval (different for each swept slope of "ramp")
+```
+
+#### Observe newly constructed `c_cos` dataset:
+<img src="https://github.com/ma-laforge/FileRepo/blob/master/MDDatasets/demo1/samplemdcalc_4.png">
+
+
+## Core Architecture
+
 ### Functions Of 1 Argument (`DataF1`) & Interpolation
 
-Type `DataF1` is used to represent *continuous* functions of 1 argument (y = f(x)).  `DataF1` stores samples of said functions in its `x` & `y` vectors.
+Type `DataF1` is used to represent *continuous* functions of 1 argument (`y = f(x)`).  `DataF1` stores samples of said functions in its `x` & `y` vectors.
 
 Operations performed on two `DataF1` objects will result in the interpolation of the corresponding `{x, y}` coordinates.  Furthermore, operations beyond the x-range of a `DataF1` object "extrapolate" to 0.
 
@@ -81,7 +151,7 @@ TODO: Provide a means to re-order dimensions.
 
 - Two-argument functions:
 
-  - `+, -, *, /,`
+  - `+, -, *, /, ^,`
 <br>`max, min,`
 <br>`atan, hypot,`
 <br>`maximum, minimum,`
