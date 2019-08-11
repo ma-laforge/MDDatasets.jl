@@ -208,7 +208,7 @@ end; end #CODEGEN---------------------------------------------------------------
 #Support reducing/collpasing funcitons of DataF1
 #-------------------------------------------------------------------------------
 const _custredfn1 = [
-	:xcross1, :integ, :xmin, :xmax
+	:xcross1, :integ, :xmin, :xmax, :value,
 ]
 
 for fn in _custredfn1; @eval begin #CODEGEN-------------------------------------
