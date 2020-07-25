@@ -17,6 +17,7 @@ function ensure(cond::Bool, err)
 end
 
 #Conditionnally generate error using "do" syntax:
+#(Call function and throw results when cond is false)
 function ensure(fn::Function, cond::Bool)
 	if !cond; throw(fn()); end
 end

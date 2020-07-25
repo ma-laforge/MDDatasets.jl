@@ -73,7 +73,7 @@ function Base.size(::Type{DataHR}, sweeps::Vector{PSweep})
 	return tuple(dims...)
 end
 
-#Returns the dimension corresponding to the given string:
+#Returns the dimension corresponding to the given parameter name:
 function dimension(::Type{DataHR}, sweeps::Vector{PSweep}, id::String)
 	dim = findfirst((s)->(id==s.id), sweeps)
 	ensure(dim!=nothing, ArgumentError("Sweep not found: $id."))

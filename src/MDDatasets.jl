@@ -75,13 +75,17 @@ export sanitize #Clamp down infinite values & substitute NaNs
 export value #High-collision WARNING: other modules probably want to export "value".
 export sweep #Access values from a particular parameter sweep.
 export sweeps #Get the list of parameter sweeps in DataHR.
+#Base.ndims #Return number of dimensions (parametric sweeps).
+export dimension #Returns the dimension corresponding to the given parameter name.
 export subscripts #Provides subscripts iterator to access each element in DataHR.
 export getsubarray
 export coordinates #Get parameter sweep coordinates corresponding to given subscripts.
+export paramlist #Return a list of parameter values being swept.
 export parameter #Get parameter values for a particular sweep.
 
 #Basic dataset operations:
 #-------------------------------------------------------------------------------
+@doc "Gets a dataset with all the x-values as the y-values" xval
 export xval #Gets a dataset with all the x-values as the y-values
 #value(ds, x=value) (already exported): get y-value @ given x.
 export clip #clips a dataset within an xrange

@@ -4,6 +4,14 @@
 #==Main types
 ===============================================================================#
 
+@doc """
+    DataRS{T} <: DataMD
+
+Recursive data structure used to store results from a parametric sweep.
+
+See also: [fill(::DataRS, ...)](@ref) [ndims(::DataRS)](@ref) [paramlist(::DataRS)](@ref)
+""" DataRS
+
 #Linked-list representation of multi-dimensional datasets:
 #-------------------------------------------------------------------------------
 mutable struct DataRS{T} <: DataMD
@@ -36,14 +44,107 @@ elemallowed(::Type{DataRS}, ::Type{DataRS}) = true #Also allow recursive structu
 Base.promote_rule(::Type{T1}, ::Type{T2}) where {T1<:DataRS, T2<:Number} = DataRS
 
 
+#==Data integrity
+===============================================================================#
+function _ndims(d::DataRS)
+	depth = 0
+
+	#Count depth:
+	w = d #walks across data structure
+	while isa(w, DataRS)
+		depth += 1
+		w = w.elem[1]
+	end
+	return depth
+end
+
+function ensure_validsweep(d::DataRS)
+	if length(d.elem) != length(d.sweep)
+		id = d.sweep.id
+		msg = "Sweep length : data length mismatch: $id"
+		throw(ArgumentError(msg))
+	end
+end
+
+function _validate_dimensionality(d::DataRS, depth::Int)
+	function validate_depth(d, depth) #Leaf element
+		ensure(0 == depth, ArgumentError("DataRS: Inconsistent dimensionality"))
+	end
+
+	function validate_depth(d::DataRS, depth)
+		ensure(depth > 0, ArgumentError("DataRS: Inconsistent dimensionality")) #Recursion safety
+		ensure_validsweep(d)
+		nextdepth = depth - 1
+		for e in d.elem
+			validate_depth(e, nextdepth)
+		end
+		return
+	end
+	return validate_depth(d, depth)
+end
+validate_dimensionality(d::DataRS) = _validate_dimensionality(d, _ndims(d))
+
+
 #==Accessor functions
 ===============================================================================#
 Base.eltype(d::DataRS{T}) where T = T
 Base.length(d::DataRS) = length(d.elem)
 
+"""
+    ndims(d::DataRS)
+
+Return number of dimensions for the parametric sweep in d.
+""" Base.ndims(::DataRS)
+function Base.ndims(d::DataRS)
+	depth = _ndims(d)
+	_validate_dimensionality(d, depth)
+	return depth
+end
+
+"""
+    paramlist(d::DataRS)
+
+Return a list of parameter values being swept.
+"""
+function paramlist(d::DataRS)
+	plist = String[]
+
+	#Count depth:
+	w = d #walks across data structure
+	while isa(w, DataRS)
+		push!(plist, w.sweep.id)
+		w = w.elem[1]
+	end
+	_validate_dimensionality(d, length(plist))
+	return plist
+end
+
 
 #==Help with construction
 ===============================================================================#
+
+@doc """
+    fill(d::DataRS, ...)
+
+Construct a DataRS structure storing results from parametric sweeps using recursive data structures.
+
+# Examples
+```julia-repl
+signal = fill(DataRS, PSweep("A", [1, 2, 4] .* 1e-3)) do A
+    fill(DataRS, PSweep("phi", [0, 0.5, 1] .* (π/4))) do 𝜙
+    fill(DataRS{DataF1}, PSweep("freq", [1, 4, 16] .* 1e3)) do 𝑓
+       𝜔 = 2π*𝑓; T = 1/𝑓
+       Δt = T/100 #Define resolution from # of samples per period
+       Tsim = 4T #Simulated time
+       t = DataF1(0:Δt:Tsim) #DataF1 creates a t:{y, x} container with y == x
+       sig = A * sin(𝜔*t + 𝜙) #Still a DataF1 sig:{y, x=t} container
+       return sig
+end; end; end
+```
+
+Note that inner-most sweep needs to specify element type (DataF1).
+Other (scalar) element types include: DataInt/DataFloat/DataComplex.
+""" Base.fill(::DataRS, args...)
 
 #Implement "fill(DataRS, ...) do sweepval" syntax:
 function Base.fill!(fn::Function, d::DataRS)
@@ -69,6 +170,12 @@ end
 #Define "parameter".
 #(Generates a DataRS object containing the value of a given swept parameter)
 #-------------------------------------------------------------------------------
+
+@doc """
+    parameter(d::DataRS, sweepid::String)
+
+Get parameter values for a particular sweep.
+""" parameter
 
 #Deal with non-leaf elements, once the sweep value is found:
 function _parameter(d::DataRS{DataRS}, sweepid::String, sweepval::T) where T

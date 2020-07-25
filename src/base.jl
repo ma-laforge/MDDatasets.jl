@@ -4,6 +4,14 @@
 
 #==High-level types
 ===============================================================================#
+@doc """
+    DataMD
+
+Base type (abstract) used to store multi-dimensional data.
+
+See also: [DataF1](@ref) [DataRS](@ref) [DataMD](@ref)
+""" DataMD
+
 abstract type DataMD end #Multi-dimensional data
 abstract type LeafDS <: DataMD end #Leaf dataset
 
@@ -38,6 +46,11 @@ end
 
 #==Leaf data elements
 ===============================================================================#
+@doc """
+    DataF1
+
+Function of 1 variable, y(x): optimized for processing on y-data.
+""" DataF1
 
 #DataF1, Function of 1 variable, y(x): optimized for processing on y-data
 #(All y-data points are stored contiguously)
@@ -59,17 +72,25 @@ function DataF1(x::Vector{TX}, y::Function) where TX<:Number
 	DataF1(x, ytype[y(elem) for elem in x])
 end
 
+"""
+    DataF1(x, y::Function)
+
+Construct a DataF1 object from a vector of x-values & a function of one argument.
+"""
 function DataF1(x::AbstractRange, y::Function)
 	ensureincreasingx(x)
 	return DataF1(collect(x), y)
 end
 
-#Build a DataF1 object from a x-value range (make y=x):
+"""
+    DataF1(x::AbstractRange)
+
+Construct a DataF1 object from a x-value range (make y=x):
+"""
 function DataF1(x::AbstractRange)
 	ensureincreasingx(x)
 	return DataF1(collect(x), collect(x))
 end
-
 
 
 #==Type aliases
@@ -209,12 +230,19 @@ end
 #==Interpolations
 ===============================================================================#
 
-#Interpolate value of a DataF1 dataset for a given x:
-#NOTE:
-#    -Uses linear interpolation
-#    -Assumes value is zero when out of bounds
+@doc """
+    value(d::DataMD; x::Number=[value])
+
+Interpolate value of a DataF1 dataset for a given x:
+
+# NOTE:
+ - Uses linear interpolation between points.
+ - Assumes value is zero when out of x-range.
+""" value
+
+#Main value() algorithm:
 #    -TODO: binary search
-function value(d::DataF1{TX, TY}; x::Number=0) where {TX<:Number, TY<:Number}
+function _value(d::DataF1{TX, TY}, x::Number) where {TX<:Number, TY<:Number}
 	validate(d) #Expensive, but might avoid headaches
 	nd = length(d) #Somewhat expensive
 	RT = promote_type(TX, TY) #For type stability
@@ -235,6 +263,15 @@ function value(d::DataF1{TX, TY}; x::Number=0) where {TX<:Number, TY<:Number}
 		y = convert(RT, d.y[1])
 	end
 	return y
+end
+_value(d::DataF1, ::Nothing) =
+	throw(ArgumentError("Must specify x=value: value(::DataF1; x=[value])"))
+function value(d::DataF1, args...; x=nothing, kwargs...)
+	if length(args) + length(kwargs) > 0
+		_value(d, nothing) #Trigger error
+	else
+		_value(d, x)
+	end
 end
 
 #==Apply fn(d1,d2); where {d1,d2} ∈ DataF1 have independent (but sorted) x-values
