@@ -107,6 +107,13 @@ function coordinates(d::DataHR, subscr::Tuple=0)
 	return result
 end
 
+"""
+    paramlist(d::DataHR)
+
+Return a list of parameter values being swept.
+"""
+paramlist(d::DataHR) = String[s.id for s in d.sweeps]
+
 
 #==Help with construction
 ===============================================================================#
