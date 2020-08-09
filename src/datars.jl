@@ -62,10 +62,12 @@ end
 #Get expected leaf element by walking across first path of ::DataRS
 function _leaftype_p1(d::DataRS)
 	w = d #walks across data structure
+	leaftype = DataRS
 	while isa(w, DataRS)
+		leaftype = eltype(w)
 		w = w.elem[1]
 	end
-	return eltype(w)
+	return leaftype
 end
 
 #Get a list of sweeps along the first path of a ::DataRS.
