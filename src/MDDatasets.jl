@@ -33,7 +33,6 @@ DS(v::Symbol) = DS{v}()
 #-------------------------------------------------------------------------------
 include("functions.jl")
 include("math.jl")
-include("physics.jl")
 include("arrays.jl")
 include("base.jl")
 include("datahr.jl")
