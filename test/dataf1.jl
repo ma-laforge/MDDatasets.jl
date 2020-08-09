@@ -1,19 +1,7 @@
-#Test code
-#-------------------------------------------------------------------------------
+@testset "DataF1 tests" begin show_testset_section() #Scope for test data
 
 using MDDatasets
 using Test
-
-
-#==List available physics constants (informative)
-===============================================================================#
-
-println("\nList of available physics constants:")
-println("TODO: move to separate unit")
-sepline = "---------------------------------------------------------------------"
-println(sepline)
-MDDatasets.Physics.Constants._show()
-println()
 
 
 #==Input data
@@ -35,7 +23,7 @@ d10=DataF1(collect(1:length(y)), y)
 
 #==Basic Tests
 ===============================================================================#
-@testset "Basic operations on DataF1" begin
+@testset "Basic operations on DataF1" begin show_testset_description()
 	r1 = d1+d2
 	r2 = d1+d3
 	#r3 = d1+d4
@@ -50,7 +38,7 @@ d10=DataF1(collect(1:length(y)), y)
 	@test length(r2) == 10
 end
 
-@testset "Functionnality of clip()" begin
+@testset "Functionnality of clip()" begin show_testset_description()
 	_d1 = clip(d1, xmin=1, xmax=9)
 	@test _d1.x == collect(1:9.0)
 	@test _d1.y == _d1.x
@@ -80,7 +68,7 @@ end
 	@test _d3.y == [13.5, 14.0, 15.0, 16.0, 17.0, 17.5]
 end
 
-@testset "Functionnality of x/ycross()" begin
+@testset "Functionnality of x/ycross()" begin show_testset_description()
 	rtol = 1e-4
 
 	#Test ycross:
@@ -120,7 +108,7 @@ end
 	@test ycross1(d10, .5, n=3) ≈ 0.5 rtol=rtol
 end
 
-@testset "Functionnality of meas() interface" begin
+@testset "Functionnality of meas() interface" begin show_testset_description()
 	_xref = xcross(d10, allow=xingsrise)
 	_x = meas(:xcross, d10, allow=xingsrise)
 	@test _x.x == _xref.x
@@ -131,13 +119,13 @@ end
 	@test _x.y == _xref.y
 end
 
-@testset "Functionnality value()" begin
+@testset "Functionnality value()" begin show_testset_description()
 	for i in 1:length(d3)
 		@test d3.y[i] == value(d3, x=d3.x[i])
 	end
 end
 
-@testset "Functionnality of ensure()" begin
+@testset "Functionnality of ensure()" begin show_testset_description()
 	function fail_to_ensure()
 		@warn("TODO: fix bad ensure-do syntax - sounds like body should execute when predicate is true")
 
@@ -155,10 +143,4 @@ end
 	@test_throws ArgumentError fail_to_ensure()
 end
 
-
-#==DataHR/DataRS Tests
-===============================================================================#
-include("runtests_datahr.jl")
-include("runtests_datars.jl")
-
-:Test_Complete
+end

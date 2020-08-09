@@ -1,5 +1,4 @@
-#Test DataRS manipulations
-#-------------------------------------------------------------------------------
+@testset "DataRS tests" begin show_testset_section() #Scope for test data
 
 using MDDatasets
 using Test
@@ -21,10 +20,19 @@ data = fill(DataRS, PSweep("tbit", [1, 3] * 1e-9)) do tbit
 	end
 end
 
+#Construct DataRS object from parametric sweeps:
+_datagen1(indep::Bool) = fill(DataRS, PSweep("A", Float64[1, 3])) do A
+	offset = indep ? 0 : A
+	#Need to explicitly specify DataRS{DataFloat} as type for inner-most sweep:
+	fill(DataRS{DataFloat}, PSweep("B", Float64[3, 5, 6] .+ offset)) do B
+		return 10A + B
+	end
+end
+
 
 #==Tests
 ===============================================================================#
-@testset "Construction of DataRS objects" begin
+@testset "Construction of DataRS objects" begin show_testset_description()
 	#TODO: write tests to verify structure
 	@info("Visually confirm structure of \"data\":")
 	@show data
@@ -33,7 +41,7 @@ end
 	@test data.elem[1].sweep.id == "VDD" #should be inner-most loop
 end
 
-@testset "Access parameter data" begin
+@testset "Access parameter data" begin show_testset_description()
 	#Extract value of tbit (first sweep):
 	data_tbit = parameter(data, "tbit")
 
@@ -46,7 +54,7 @@ end
 	end
 end
 
-@testset "Broacasting operations on DataRS" begin
+@testset "Broacasting operations on DataRS" begin show_testset_description()
 	#Get sweep values:
 	sw_tbit = data.sweep.v
 	sw_vdd = data.elem[1].sweep.v
@@ -107,7 +115,25 @@ end
 		@test typeof(_elem) == Float64
 		@test _elem == maximum(m2val)
 	end
-
 end
 
-:Test_Complete
+@testset "Conversion DataRS => DataHR" begin show_testset_description()
+	datars_indep=_datagen1(true)
+	datars_dep=_datagen1(false)
+
+	datahr = convert(DataHR, datars_indep)
+		#TODO: test something
+	@test_throws ArgumentError convert(DataHR, datars_dep)
+
+	datars_2 = convert(DataRS, datahr)
+	@test !_datamatch(datars_2, datars_2+1) #Make sure _datamatch works
+	@test _datamatch(datars_2, datars_2)
+
+	try
+		datars_2 - datars_indep
+	catch
+		@warn("Cannot operate with DataRS re-created through DataHR because of PSweep comparison & way fill!(::DataRS) works.")
+	end
+end
+
+end

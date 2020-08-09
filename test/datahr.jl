@@ -1,5 +1,4 @@
-#Test DataHR manipulations
-#-------------------------------------------------------------------------------
+@testset "DataHR tests" begin show_testset_section() #Scope for test data
 
 using MDDatasets
 using Test
@@ -29,7 +28,7 @@ dhr3 = DataHR(sweeplist3,DataF1[d1 d1; d1 d1])
 
 #==Tests
 ===============================================================================#
-@testset "Broadcast operations on DataHR" begin
+@testset "Broadcast operations on DataHR" begin show_testset_description()
 	s1 = dhr1 + dhr1
 	@testset "Validate s1 = dhr1+dhr2" begin
 		for (es1, e1) in zip(s1.elem, dhr1.elem)
@@ -41,7 +40,7 @@ dhr3 = DataHR(sweeplist3,DataF1[d1 d1; d1 d1])
 	@test_throws ArgumentError dhr1+dhr3 #Mismatched sweeps
 end
 
-@testset "DataHR => DataRS conversion" begin
+@testset "DataHR => DataRS conversion" begin show_testset_description()
 	drs1 = DataRS(dhr1)
 
 	#Verify that the sweeps match:
@@ -58,4 +57,4 @@ end
 	end
 end
 
-:Test_Complete
+end
