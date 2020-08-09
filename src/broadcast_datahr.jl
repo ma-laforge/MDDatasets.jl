@@ -156,12 +156,6 @@ function _broadcast(::Type{T}, s::Vector{PSweep}, fn::Function, args...; kwargs.
 	return result
 end
 
-#Trap to provide more useful message:
-function broadcastMD(ct::CastType, fn::Function, args...; kwargs...)
-	msg = "Cast type not supported for call to $fn: $ct"
-	throw(ArgumentError(msg))
-end
-
 #Find base sweep for a 1-argument broadcastMD
 #-------------------------------------------------------------------------------
 fnbasesweep(fn::Function, d) = PSweep[]

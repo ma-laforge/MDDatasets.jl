@@ -105,20 +105,37 @@ function apply(fn::Function, d1::Number, d2::DataF1, args...; kwargs...)
 	return DataF1(d2.x, y)
 end
 
+#Relay to Base. broadcasting system:
+#-------------------------------------------------------------------------------
+broadcastBase(fn::Function, args...; kwargs...) =
+	Base.materialize(Base.broadcasted(fn, args...; kwargs...))
+
 #Generic broadcastMD functions (avoids name collisions):
 #NOTE: "core" means most elemental version of the function
 #-------------------------------------------------------------------------------
+#Trap to provide more useful message:
+function broadcastMD(ct::CastType, fn::Function, args...; kwargs...)
+	msg = "Cast type not supported for call to $fn: $ct"
+	throw(ArgumentError(msg))
+end
+
 #fn(DataF1) - core: fn(Number)
+broadcastMD(::CastType1{Number,1}, fn::Function, d::Number, args...; kwargs...) =
+	fn(d, args...; kwargs...)
 broadcastMD(::CastType1{Number,1}, fn::Function, d::DataF1, args...; kwargs...) =
-	DataF1(d.x, fn(d.y, args...; kwargs...))
+	DataF1(d.x, broadcastBase(fn, d.y, args...; kwargs...))
+
+#Reducing fn(DataF1) - core: fn(Number)
+broadcastMD(::CastTypeRed1{Number,1}, fn::Function, d::DataF1, args...; kwargs...) =
+	fn(d.y, args...; kwargs...)
 
 #fn(DataF1) - core: fn(DataF1)
 broadcastMD(::CastType1{DataF1,1}, fn::Function, d::DataF1, args...; kwargs...) =
 	fn(d, args...; kwargs...)
 
-#Reducing fn(DataF1) - core: fn(Number)
-broadcastMD(::CastTypeRed1{Number,1}, fn::Function, d::DataF1, args...; kwargs...) =
-	fn(d.y, args...; kwargs...)
+#Reducing fn(DataF1) - core: fn(DataF1)
+broadcastMD(::CastTypeRed1{DataF1,1}, fn::Function, d::DataF1, args...; kwargs...) =
+	fn(d, args...; kwargs...)
 
 #fn(Number, Number) - core: fn(Number, Number)
 broadcastMD(CT::CastType2{Number,1,Number,2}, fn::Function, d1::Number, d2::Number, args...; kwargs...) =
@@ -139,9 +156,5 @@ broadcastMD(CT::CastType2{Number,1,Number,2}, fn::Function, d1::Number, d2::Data
 #fn(DataF1, DataF1) - core: fn(DataF1, DataF1)
 broadcastMD(CT::CastType2{DataF1,1,DataF1,2}, fn::Function, d1::DataF1, d2::DataF1, args...; kwargs...) =
 	fn(d1, d2, args...; kwargs...)
-
-#Reducing fn(DataF1) - core: fn(DataF1)
-broadcastMD(::CastTypeRed1{DataF1,1}, fn::Function, d::DataF1, args...; kwargs...) =
-	fn(d, args...; kwargs...)
 
 #Last line

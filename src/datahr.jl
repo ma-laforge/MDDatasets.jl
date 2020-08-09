@@ -107,12 +107,20 @@ function coordinates(d::DataHR, subscr::Tuple=0)
 	return result
 end
 
+
+"""
+    paramlist(d::Vector{PSweep})
+
+Return a list of parameter in a list of PSweep.
+"""
+paramlist(sl::Vector{PSweep}) = String[s.id for s in sl]
+
 """
     paramlist(d::DataHR)
 
 Return a list of parameter values being swept.
 """
-paramlist(d::DataHR) = String[s.id for s in d.sweeps]
+paramlist(d::DataHR) = paramlist(d.sweeps)
 
 
 #==Help with construction

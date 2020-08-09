@@ -44,9 +44,10 @@ elemallowed(::Type{DataRS}, ::Type{DataRS}) = true #Also allow recursive structu
 Base.promote_rule(::Type{T1}, ::Type{T2}) where {T1<:DataRS, T2<:Number} = DataRS
 
 
-#==Data integrity
+#==Unchecked accessors
 ===============================================================================#
-function _ndims(d::DataRS)
+#Get expected # of dimensions by walking across first path of ::DataRS
+function _ndims_p1(d::DataRS)
 	depth = 0
 
 	#Count depth:
@@ -57,6 +58,39 @@ function _ndims(d::DataRS)
 	end
 	return depth
 end
+
+#Get expected leaf element by walking across first path of ::DataRS
+function _leaftype_p1(d::DataRS)
+	w = d #walks across data structure
+	while isa(w, DataRS)
+		w = w.elem[1]
+	end
+	return eltype(w)
+end
+
+#Get a list of sweeps along the first path of a ::DataRS.
+function _getsweeplist_p1(d::DataRS)
+	sweeplist = PSweep[]
+	w = d #walks across data structure
+	while isa(w, DataRS)
+		push!(sweeplist, w.sweep)
+		w = w.elem[1]
+	end
+	return sweeplist
+end
+
+
+#==Data integrity
+===============================================================================#
+"""
+    sweepsmatch(s1, s2)
+
+Return true if two sweeps match.
+
+TODO: Extend Base.(=)() instead??
+"""
+sweepsmatch(s1::PSweep, s2::PSweep) = (s1.id==s2.id && s1.v==s2.v)
+#NOTE: fill!() creates different sweep objects for each pass (even if values are the same)
 
 function ensure_validsweep(d::DataRS)
 	if length(d.elem) != length(d.sweep)
@@ -82,7 +116,34 @@ function _validate_dimensionality(d::DataRS, depth::Int)
 	end
 	return validate_depth(d, depth)
 end
-validate_dimensionality(d::DataRS) = _validate_dimensionality(d, _ndims(d))
+validate_dimensionality(d::DataRS) = _validate_dimensionality(d, _ndims_p1(d))
+
+#Ensure that all sweeps @depth are equal to psweep:
+function _validate_paramsweep(d::DataRS, sweeplist::Vector{PSweep})
+	function validate_sweep(d::DataRS{T}, sweeplist) where T
+		ensure(length(sweeplist)>0,
+			ArgumentError("More sweeps than expected: $(d.sweep)")
+		)
+		ensure(sweepsmatch(d.sweep, sweeplist[1]),
+			ArgumentError("Unexpected sweep: $(d.sweep). Expected: $(sweeplist[1]).")
+		)
+		if !(T<:DataRS) #No more sweeps to check
+			ensure(length(sweeplist)<2,
+				ArgumentError("Missing sweeps:\n $(sweeplist[2:end])")
+			)
+			return #Stop recursion
+		end
+		ensure(length(sweeplist)>1,
+			ArgumentError("More sweeps than expected. Should stop at: $(sweeplist[1]).")
+		)
+		for e in d.elem
+			validate_sweep(e, sweeplist[2:end])
+		end
+		return
+	end
+
+	return validate_sweep(d, sweeplist)
+end
 
 
 #==Accessor functions
@@ -96,9 +157,20 @@ Base.length(d::DataRS) = length(d.elem)
 Return number of dimensions for the parametric sweep in d.
 """ Base.ndims(::DataRS)
 function Base.ndims(d::DataRS)
-	depth = _ndims(d)
+	depth = _ndims_p1(d)
 	_validate_dimensionality(d, depth)
 	return depth
+end
+
+"""
+    sweeps(d::DataRS)
+
+Return a list of parameter sweeps for d.
+"""
+function sweeps(d::DataRS)
+	ref = _getsweeplist_p1(d)
+	_validate_paramsweep(d, ref)
+	return ref
 end
 
 """
@@ -107,16 +179,9 @@ end
 Return a list of parameter values being swept.
 """
 function paramlist(d::DataRS)
-	plist = String[]
-
-	#Count depth:
-	w = d #walks across data structure
-	while isa(w, DataRS)
-		push!(plist, w.sweep.id)
-		w = w.elem[1]
-	end
-	_validate_dimensionality(d, length(plist))
-	return plist
+	ref = _getsweeplist_p1(d)
+	_validate_paramsweep(d, ref)
+	return paramlist(ref)
 end
 
 
@@ -229,10 +294,45 @@ function _buildDataRS(d::DataHR, firstinds::Vector{Int})
 	end
 	return result
 end
+_buildDataRS(d::DataHR) = _buildDataRS(d, Int[]) #Start of recursive algorithm
 
-function DataRS(d::DataHR)
-	return _buildDataRS(d, Int[])
+#Generate DataHR from DataRS.
+#-------------------------------------------------------------------------------
+function _buildDataHR(src::DataRS)
+	function _build(data, idxlist, depth, src::DataRS{DataHR}) #Corrupt structure
+		idxlist = String[v in idxlist]
+		for i in depth:length(idxlist)
+			stridx = "?"
+		end
+		idxstr = join(idxlist, " ")
+		throw(ArgumentError("Found DataHR @ index [$idxstr]"))
+	end
+	function _build(data, idxlist, depth, src::DataRS) #Leaf element
+		for (i, elem) in enumerate(src.elem)
+			idxlist[depth] = i
+			data[idxlist...] = elem #TODO: copy???
+		end
+	end
+	function _build(data, idxlist, depth, src::DataRS{DataRS})
+		for (i, elem) in enumerate(src.elem)
+			idxlist[depth] = i
+			_build(data, idxlist, depth+1, elem)
+		end
+	end
+	
+	LT = _leaftype_p1(src)
+	sweeplist = sweeps(src) #Validates that structure is compatible with DataHR
+	idxlist = ones(Int, length(sweeplist))
+	asize = size(DataHR, sweeplist)
+	data = Array{LT}(undef, asize)
+		_build(data, idxlist, 1, src)
+	return DataHR(sweeplist, data)
 end
+
+Base.convert(::Type{DataRS}, d::DataHR) = _buildDataRS(d)
+Base.convert(::Type{DataHR}, d::DataRS) = _buildDataHR(d)
+
+@deprecate DataRS(d::DataHR) convert(DataRS, d)
 
 
 #==User-friendly show functions

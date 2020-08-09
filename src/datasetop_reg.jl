@@ -94,11 +94,15 @@ const _basefn1 = [:(Base.$fn) for fn in [
 	:sinpi, :cospi,
 	:sinc, :cosc, #cosc: d(sinc)/dx
 	:deg2rad, :rad2deg,
-	:clamp,
+
+	#I think broadcast operations will allow user to specify low & high as arguments.
+	#so: really a function of 1 DataMD argument - and 2 "parameters":
+	:clamp, #Needs low and high.
 ]]
 
 #Custom functions of 1 argument that operate on base types:
 const _custbasefn1 = [
+	#Also function of 1 DataMD argument, but 2 other "parameters":
 	:sanitize,
 ]
 
