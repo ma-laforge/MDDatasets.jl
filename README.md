@@ -1,4 +1,5 @@
 <!-- Reference-style links to make tables & lists more readable -->
+[MDDatasetsJL]: <https://github.com/ma-laforge/MDDatasets.jl>
 [CMDimDataJL]: <https://github.com/ma-laforge/CMDimData.jl>
 [CMDimCircuitsJL]: <https://github.com/ma-laforge/CMDimCircuits.jl>
 [CMDimData_sample]: <https://github.com/ma-laforge/CMDimData.jl/tree/master/sample>
