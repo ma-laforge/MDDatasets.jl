@@ -21,7 +21,7 @@ As can be seen, for the case of `VDD=0V`, we have ***two*** temperature sub-swee
 As a consequence, it is highly suggested that users use the `DataRS` structure instead of the more simple `DataHR` structure.
 
 <a name="SampleUsage_DataHR"></a>
-## Usage: Constructing A Hyper-Rectangular Dataset
+## Usage: Constructing a hyper-rectangular dataset
 
 Assuming input data can be generated using the following:
 

@@ -1,7 +1,7 @@
-# MDDatasets.jl: Core Architecture
+# MDDatasets.jl: Core architecture
 
 <a name="PrincipalTypes"></a>
-## Principal Types
+## Principal types
 
 - **`DataInt, DataFloat, DataComplex`**: Useful aliases for largest practical data types on a platform (not yet platform dependent).
 - **`DataMD`**: Abastract data type for multi-dimensional data.
@@ -11,7 +11,7 @@
 - **`PSweep`**: A parameter sweep (i.e. an independent control variable that generates experimental points in a `DataRS/DataHR` dataset).
 
 <a name="F1Arg"></a>
-## Functions Of 1 Argument (`DataF1`) & Interpolation
+## Functions of 1 argument (`DataF1`) & interpolation
 
 Type `DataF1` is used to represent *continuous* functions of 1 argument (`y = f(x)`).  `DataF1` stores samples of said functions in its `x` & `y` vectors.
 
@@ -28,15 +28,15 @@ gets simplified to:
 NOTE: When dealing with complex algorithms, this simplification is rearkably quite significant.
 
 <a name="MDDatasets"></a>
-## Multi-Dimensional Datasets (`DataRS`) & Broadcasting
+## Multi-dimensional datasets (`DataRS`) & broadcasting
 
 In order to identify trends, or simply to verify the repeatability of a process, one often needs to perform the same operation on multiple "experiments".  This module provides the `DataRS` type to store/organize/access experiment data in a convenient fashion.
 
 As a side-note, `DataRS` collects simpler data elements (like `DataF1` or simple scalar values) into a recursive data structure.  Each `DataRS` element is used to store the results on an "experiment" (or collection of experiments) where a control variable was varied (swept).  Due to the recursive nature of `DataRS`, each "sweep" can potentially represent a control variable that is *dependent* on a previous "sweep".
 
-### Broadcast Features
+### Broadcast features
 
-Operations performed on multi-dimensional data sets (`DataRS`) will automatically be broadcast to each element of the dataset ([see Known Limitations](#KnownLimitations)).
+Operations performed on multi-dimensional data sets (`DataRS`) will automatically be broadcast to each element of the dataset ([see Known limitations](#KnownLimitations)).
 
 Explicit looping over `DataRS` structures is therefore typically not required.  Many algorithms can be used unmodified, even after changing the set of experimental points.
 
@@ -52,12 +52,12 @@ As can be inferred from above, the sweep from the inner-most dimension can be th
 TODO: Provide a means to re-order dimensions.
 
 <a name="SupportedFunctions"></a>
-# Supported Functions
+# Supported functions
 
 ## Constructors
  - **`fill`**`()`: Create a DataHR or DataRS structure (see examples for use).
 
-## Helper Functions
+## Helper functions
 
  - **`ensure`**`(cond, err)`: Similar to assert, but will never compile out (not just for debugging).
    - ex: `ensure(i != 0, SystemError("Some system error"))`
@@ -90,7 +90,7 @@ TODO: Provide a means to re-order dimensions.
 <br>`prod, sum,`
 <br>`mean, median, middle,`
 
-## Accessor Functions
+## Accessor functions
  - **`sweep`**`()`: Access values from a particular parameter sweep (`DataHR` only).
   - `sweep(d::DataHR, dim::Int)`
   - `sweep(d::DataHR, dim::String)`: Access by sweep name
@@ -102,13 +102,13 @@ TODO: Provide a means to re-order dimensions.
  - **`paramlist`**`(d::DataRS/DataHR)`: Return a list of parameter values being swept.
  - **`parameter`**`(d::DataRS/DataHR, sweepid::String)`: Get parameter values for a particular sweep.
 
-## Differential/Integral Math
+## Differential/Integral math
 
  - **`deriv`**`(d::DataMD, shiftx=[Bool])`: Returns dataset with derivative of `d`
  - **`integ`**`(d::DataMD, shiftx=[Bool])`: Returns definite integral of `d`
  - **`iinteg`**`(d::DataMD, shiftx=[Bool])`: Returns dataset with indefinite integral of `d`
 
-## Basic Dataset Operations
+## Basic dataset operations
  - **`xval`**`(::DataMD)`: Returns a dataset with where y(x) = x.
  - **`xmin`**`(::DataMD)`: Returns minimum x value.
  - **`xmax`**`(::DataMD)`: Returns maximum x value.
@@ -126,7 +126,7 @@ TODO: Provide a means to re-order dimensions.
  - **`xscale`**`(::DataMD, fact::Number)`: Returns dataset with all x-values scaled by `fact`
  - **`yvsx`**`(yv::DataMD, xv::DataMD)`: Returns dataset with `{xv(x), yv(x)}` (interpolating, when necessary)
 
-## Cross-Based Operations
+## Cross-based operations
 
 Note: The `Event` object makes functions return x-vectors that represent the current event number.
 
@@ -139,15 +139,15 @@ Note: The `Event` object makes functions return x-vectors that represent the cur
  - **`ycross1`**`()`: Returns scalar y-value of `d1` on `n`-th crossing of `d1` & `d2`:
    - `ycross1([Event,] d1::DataF1, n=[Int], xstart=[Real], allow=[CrossType])`
 
-### Operations On Clock Signals
+### Operations on clock signals
  - **`measperiod`**`(d::DataF1, nmax=[Int], tstart=[Real], xing=[CrossType], shiftx=[Bool])`
  - **`measfreq`**`(d::DataF1, nmax=[Int], tstart=[Real], xing=[CrossType], shiftx=[Bool])`
 
-### Operations On Binary Signals
+### Operations on binary signals
  - **`measdelay`**`(dref::DataF1, dmain::DataF1, nmax=[Int], tstart_ref=[Real], tstart_main=[Real], xing_ref=[CrossType], xing_main=[CrossType])`
  - **`measck2q`**`(ck::DataF1, q::DataF1, delaymin=[Real], tstart_ck=[Real], tstart_q=[Real], xing_ck=[CrossType], xing_q=[CrossType])`
 
-### The `CrossType` Object
+### The `CrossType` object
 
 The `CrossType` object is used to filter out undersired events.
 
@@ -166,7 +166,7 @@ Constructors:
    - `CrossType(:risefall)`: Preset to selecting both rising & falling edges
 
 <a name="KnownLimitations"></a>
-# Known Limitations
+# Known limitations
 
  1. Support for broadcasting functions over `DataHR` & `DataRS` types is fairly extensive.
     - Nonetheless, the system is incomplete/imperfect, and unexpected failures will occur.

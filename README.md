@@ -1,41 +1,57 @@
-# MDDatasets.jl: Multi-Dimensional Datasets
-## [:heavy_exclamation_mark: Core of C-Data Analysis/Visualization Suite](https://github.com/ma-laforge/CData.jl)
+<!-- Reference-style links to make tables & lists more readable -->
+[CMDimDataJL]: <https://github.com/ma-laforge/CMDimData.jl>
+[CMDimCircuitsJL]: <https://github.com/ma-laforge/CMDimCircuits.jl>
+[CMDimData_sample]: <https://github.com/ma-laforge/CMDimData.jl/tree/master/sample>
+[CMDimCircuits_sample]: <https://github.com/ma-laforge/CMDimCircuits.jl/tree/master/sample>
 
+[`CMDimData.jl`](https://github.com/ma-laforge/CMDimData.jl/tree/master/sample) and [`CMDimCircuits.jl`](https://github.com/ma-laforge/CMDimCircuits.jl/tree/master/sample) modules.
+
+# MDDatasets.jl: Multi-Dimensional Datasets for Parametric Analysis +Continuous <var>f(x)</var>
 [![Build Status](https://travis-ci.org/ma-laforge/MDDatasets.jl.svg?branch=master)](https://travis-ci.org/ma-laforge/MDDatasets.jl)
 
-## Description
+## :attention: Base library
+`MDDatasets.jl` is a base library to make parametric analysis simple by broadcasting over its multi-dimensional data structures.  For a more useful analysis solution, it is highly recommended to install one of the following "suites":
+ - [CMDimData.jl][CMDimDataJL]: Facilitates parametric analysis with continous <var>f(x)</var> interpolation & multi-dimensional plots. Built using [MDDatasets.jl][MDDatasetsJL] module.
+ - [CMDimCircuits.jl][CMDimCircuitsJL]: Extends [CMDimData.jl][CMDimDataJL] with circuit-specific functionnality (ex: signal processing, network analysis, ...).
 
-The MDDatasets.jl module provides tools to simplify manipulation of multi-dimensional datasets.  MDDatasets.jl implements the core algorithms of the [C-Data Analysis/Visualization Suite](https://github.com/ma-laforge/CData.jl)
+## Table of contents
+
+ 1. [Description](#Description)
+    1. [Features/Highlights](#Highlights)
+ 1. [Sample usage](#SampleUsage)
+    1. [demo1](doc/demo1.md)
+ 1. [Core architecture](doc/architecture.md)
+    1. [Principal types](doc/architecture.md#PrincipalTypes)
+    1. [Functions of 1 argument (`DataF1`) & interpolation](doc/architecture.md#F1Arg)
+    1. [Multi-dimensional datasets (`DataRS`) & broadcasting](doc/architecture.md#MDDatasets)
+ 1. [Supported functions](doc/architecture.md#SupportedFunctions)
+
+<a name="Description"></a>
+## Description
+The `MDDatasets.jl` package provides tools to simplify manipulation of multi-dimensional datasets, and represent `{x,y}` vectors as a continuous function of 1 argument: `y=f(x)`.
 
 | <img src="https://github.com/ma-laforge/FileRepo/blob/master/SignalProcessing/sampleplots/demo15.png" width="850"> |
 | :---: |
 
-### Important Features
+<a name="Highlights"></a>
+### Features/Highlights
 - ***Single variable for (x,y) values:*** Stores both `(x,y)` values representing `y=f(x)` in a single, coherent structure.  This signficantly improves the simplicity & readability of your calculations.
 - ***Automatic Interpolation:*** Calculations will automatically be interpolated over `x` as if `y=f(x)` data represented a ***continuous*** function of x.
 - ***Automatic Broadcasting:*** Operations on multi-dimensional datasets will automatically be broadcasted (vectorized) over all subsets.  This significantly improves the readability of programs.
 
-## Table of Contents
-
- 1. [Sample Usage](#SampleUsage)
-    1. [demo1](doc/demo1.md)
- 1. [Core Architecture](doc/architecture.md)
-    1. [Principal Types](doc/architecture.md#PrincipalTypes)
-    1. [Functions Of 1 Argument (`DataF1`) & Interpolation](doc/architecture.md#F1Arg)
-    1. [Multi-Dimensional Datasets (`DataRS`) & Broadcasting](doc/architecture.md#MDDatasets)
- 1. [Supported Functions](doc/architecture.md#SupportedFunctions)
-
 <a name="SampleUsage"></a>
-## Sample Usage
+## Sample usage
+Examples of how to use `MDDatasets` are provided in the [sample/](sample) subdirectory.
 
+Hilights:
  - [demo1](doc/demo1.md)
 
-Other examples of the MDDatasets.jl capabilities can be found under the [test directory](test/).
+Other examples of its capabilities can be found under the [test directory](test/).
 
-More advanced usage examples can be found in the [sample directory](https://github.com/ma-laforge/SignalProcessing.jl/tree/master/sample) of the [SignalProcessing.jl module](https://github.com/ma-laforge/SignalProcessing.jl).
+More advanced usage examples can be found in the sample directories of [`CMDimData.jl`][CMDimData_sample] and [`CMDimCircuits.jl`][CMDimCircuits_sample] modules.
 
 <a name="SampleUsage_DataRS"></a>
-## Usage: Constructing A Recursive-Sweep Dataset
+## Usage: Constructing a recursive-sweep dataset
 
 Assuming input data can be generated using the following:
 
@@ -58,19 +74,19 @@ One can create a relatively complex Recursive-Sweep (DataRS) dataset using the f
 	end
 
 <a name="KnownLimitations"></a>
-## Known Limitations
+## Known limitations
+
+### [TODO](TODO.md)
 
  1. Support for broadcasting functions over `DataHR` & `DataRS` types is fairly extensive.
     - Nonetheless, the system is incomplete/imperfect, and unexpected failures will occur.
 
-### [TODO](TODO.md)
-
 ### Compatibility
 
-Extensive compatibility testing of MDDatasets.jl has not been performed.  The module has been tested using the following environment(s):
+Extensive compatibility testing of `MDDatasets.jl` has not been performed.  The module has been tested using the following environment(s):
 
 - Linux / Julia-1.3.1 (64-bit)
 
 ## Disclaimer
 
-The MDDatasets.jl module is not yet mature.  Expect significant changes.
+The `MDDatasets.jl` module is not yet mature.  Expect significant changes.
