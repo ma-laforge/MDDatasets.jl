@@ -4,12 +4,11 @@
 [CMDimData_sample]: <https://github.com/ma-laforge/CMDimData.jl/tree/master/sample>
 [CMDimCircuits_sample]: <https://github.com/ma-laforge/CMDimCircuits.jl/tree/master/sample>
 
-[`CMDimData.jl`](https://github.com/ma-laforge/CMDimData.jl/tree/master/sample) and [`CMDimCircuits.jl`](https://github.com/ma-laforge/CMDimCircuits.jl/tree/master/sample) modules.
 
 # MDDatasets.jl: Multi-Dimensional Datasets for Parametric Analysis +Continuous <var>f(x)</var>
 [![Build Status](https://travis-ci.org/ma-laforge/MDDatasets.jl.svg?branch=master)](https://travis-ci.org/ma-laforge/MDDatasets.jl)
 
-## :attention: Base library
+## :warning: Base library
 `MDDatasets.jl` is a base library to make parametric analysis simple by broadcasting over its multi-dimensional data structures.  For a more useful analysis solution, it is highly recommended to install one of the following "suites":
  - [CMDimData.jl][CMDimDataJL]: Facilitates parametric analysis with continous <var>f(x)</var> interpolation & multi-dimensional plots. Built using [MDDatasets.jl][MDDatasetsJL] module.
  - [CMDimCircuits.jl][CMDimCircuitsJL]: Extends [CMDimData.jl][CMDimDataJL] with circuit-specific functionnality (ex: signal processing, network analysis, ...).
