@@ -7,7 +7,7 @@
 
 
 # MDDatasets.jl: Multi-Dimensional Datasets for Parametric Analysis +Continuous <var>f(x)</var>
-[![Build Status](https://travis-ci.org/ma-laforge/MDDatasets.jl.svg?branch=master)](https://travis-ci.org/ma-laforge/MDDatasets.jl)
+[![Build Status](https://github.com/ma-laforge/MDDatasets.jl/workflows/CI/badge.svg)](https://github.com/ma-laforge/MDDatasets.jl/actions?query=workflow%3ACI)
 
 ## :warning: Base library
 `MDDatasets.jl` is a base library to make parametric analysis simple by broadcasting over its multi-dimensional data structures.  For a more useful analysis solution, it is highly recommended to install one of the following "suites":
@@ -85,7 +85,7 @@ One can create a relatively complex Recursive-Sweep (DataRS) dataset using the f
 
 Extensive compatibility testing of `MDDatasets.jl` has not been performed.  The module has been tested using the following environment(s):
 
-- Linux / Julia-1.3.1 (64-bit)
+ - Windows 10 / Linux / Julia-1.5.3
 
 ## Disclaimer
 
