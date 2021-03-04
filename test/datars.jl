@@ -32,6 +32,13 @@ end
 
 #==Tests
 ===============================================================================#
+@testset "Validate _datamatch()" begin show_testset_description()
+	datars_dep=_datagen1(false)
+	other = datars_dep*1.0
+	@test !_datamatch(datars_dep, other+1) #Make sure _datamatch works
+	@test _datamatch(datars_dep, other)
+end
+
 @testset "Construction of DataRS objects" begin show_testset_description()
 	#TODO: write tests to verify structure
 	@info("Visually confirm structure of \"data\":")
@@ -39,6 +46,26 @@ end
 
 	@test data.sweep.id == "tbit" #should be outer-most loop
 	@test data.elem[1].sweep.id == "VDD" #should be inner-most loop
+
+	#Simple (independent) parameter sweep:
+	swlist = PSweep[
+		PSweep("v1", [1,2])
+		PSweep("v2", [4,5])
+	]
+
+	dhrs = fill(t, DataRS, swlist)
+	@test dhrs.sweep.id == "v1" #should be outer-most loop
+	@test dhrs.elem[1].sweep.id == "v2" #should be inner-most loop
+
+	dhrs_0 = zeros(DataRS, swlist)
+	dhrs_1 = ones(DataRS, swlist)
+	dhrs_2 = fill(2, DataRS, swlist)
+
+	@test _datamatch(dhrs_2-dhrs_1, dhrs_1)
+	@test _datamatch(dhrs_2-dhrs_1, dhrs_1)
+	@test _datamatch(dhrs_2-2*dhrs_1, dhrs_0)
+
+	#TODO: Check that we actually have zeros, etc.
 end
 
 @testset "Access parameter data" begin show_testset_description()
@@ -117,7 +144,7 @@ end
 	end
 end
 
-@testset "Conversion DataRS => DataHR" begin show_testset_description()
+@testset "Conversion (DataHR <=> DataRS)" begin show_testset_description()
 	datars_indep=_datagen1(true)
 	datars_dep=_datagen1(false)
 
@@ -126,7 +153,6 @@ end
 	@test_throws ArgumentError convert(DataHR, datars_dep)
 
 	datars_2 = convert(DataRS, datahr)
-	@test !_datamatch(datars_2, datars_2+1) #Make sure _datamatch works
 	@test _datamatch(datars_2, datars_2)
 
 	try

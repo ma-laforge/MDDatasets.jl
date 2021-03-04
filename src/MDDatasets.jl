@@ -47,6 +47,7 @@ include("broadcast_datars.jl")
 include("datasetop_reg.jl")
 include("measinterface.jl")
 include("show.jl")
+include("doc.jl")
 
 #==TODO: Watch out for value() being exported by multiple modules...
 Maybe it can be defined in "Units"

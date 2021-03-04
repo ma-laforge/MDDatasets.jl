@@ -190,29 +190,6 @@ end
 #==Help with construction
 ===============================================================================#
 
-@doc """
-    fill(d::DataRS, ...)
-
-Construct a DataRS structure storing results from parametric sweeps using recursive data structures.
-
-# Examples
-```julia-repl
-signal = fill(DataRS, PSweep("A", [1, 2, 4] .* 1e-3)) do A
-    fill(DataRS, PSweep("phi", [0, 0.5, 1] .* (π/4))) do 𝜙
-    fill(DataRS{DataF1}, PSweep("freq", [1, 4, 16] .* 1e3)) do 𝑓
-       𝜔 = 2π*𝑓; T = 1/𝑓
-       Δt = T/100 #Define resolution from # of samples per period
-       Tsim = 4T #Simulated time
-       t = DataF1(0:Δt:Tsim) #DataF1 creates a t:{y, x} container with y == x
-       sig = A * sin(𝜔*t + 𝜙) #Still a DataF1 sig:{y, x=t} container
-       return sig
-end; end; end
-```
-
-Note that inner-most sweep needs to specify element type (DataF1).
-Other (scalar) element types include: DataInt/DataFloat/DataComplex.
-""" Base.fill(::DataRS, args...)
-
 #Implement "fill(DataRS, ...) do sweepval" syntax:
 function Base.fill!(fn::Function, d::DataRS)
 	for i in 1:length(d.sweep)
@@ -223,6 +200,18 @@ end
 Base.fill(fn::Function, ::Type{DataRS{T}}, sweep::PSweep) where T =
 	fill!(fn, DataRS(sweep, Array{T}(undef, length(sweep))))
 Base.fill(fn::Function, ::Type{DataRS}, sweep::PSweep) = fill(fn, DataRS{DataRS}, sweep)
+
+
+#Fill with a specified value (leverage DataHR algorithms for now):
+Base.fill(elem_0::DF1_Num, ::Type{DataRS}, swlist::Vector{PSweep}) =
+	convert(DataRS, fill(elem_0, DataHR, swlist))
+Base.fill(elem_0::DF1_Num, ::Type{DataRS}, sweep::PSweep) = fill(elem_0, DataRS, PSweep[sweep])
+
+#zeros & ones:
+Base.zeros(::Type{DataRS}, swlist::Vector{PSweep}) = fill(0.0, DataRS, swlist)
+Base.zeros(::Type{DataRS}, sweep::PSweep) = zeros(DataRS, PSweep[sweep])
+Base.ones(::Type{DataRS}, swlist::Vector{PSweep}) = fill(1.0, DataRS, swlist)
+Base.ones(::Type{DataRS}, sweep::PSweep) = ones(DataRS, PSweep[sweep])
 
 
 #==Data generation

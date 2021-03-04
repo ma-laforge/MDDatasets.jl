@@ -14,7 +14,7 @@ mutable struct DataHR{T} <: DataMD
 		if !elemallowed(DataMD, eltype(elem))
 			msg = "Can only create DataHR{T} for T ∈ {DataF1, DataFloat, DataInt, DataComplex}"
 			throw(ArgumentError(msg))
-		elseif ndims(DataHR, sweeps) != ndims(elem)
+		elseif size(DataHR, sweeps) != size(elem)
 			throw(ArgumentError("Number of sweeps must match dimensionality of elem"))
 		end
 		return new(sweeps, elem)
@@ -133,10 +133,24 @@ function Base.fill!(fn::Function, d::DataHR)
 	end
 	return d
 end
-Base.fill(fn::Function, ::Type{DataHR{T}}, sweeps::Vector{PSweep}) where T =
-	fill!(fn, DataHR{T}(sweeps))
-Base.fill(fn::Function, ::Type{DataHR}, sweeps::Vector{PSweep}) = fill(fn, DataHR{DataF1}, sweeps)
-Base.fill(fn::Function, ::Type{DataHR{T}}, sweep::PSweep) where T = fill(fn, DataHR{DataF1}, PSweep[sweep])
+Base.fill(fn::Function, ::Type{DataHR{T}}, swlist::Vector{PSweep}) where T =
+	fill!(fn, DataHR{T}(swlist))
+Base.fill(fn::Function, ::Type{DataHR{T}}, sweep::PSweep) where T = fill(fn, DataHR{T}, PSweep[sweep])
+#Default: DataHR -> creates DataHR{DataF1}??? Is this a bad idea?
+Base.fill(fn::Function, ::Type{DataHR}, swlist::Vector{PSweep}) = fill(fn, DataHR{DataF1}, swlist)
+
+#Fill with a specified value:
+Base.fill(elem_0::Number, ::Type{DataHR}, swlist::Vector{PSweep}) =
+	DataHR(swlist, fill(elem_0, size(DataHR, swlist)))
+Base.fill(elem_0::DataF1, ::Type{DataHR}, swlist::Vector{PSweep}) =
+	DataHR(swlist, fill!(Array{DataF1}(undef, size(DataHR, swlist)), elem_0)) #Must be array of abstract DatF1[]
+Base.fill(elem_0::DF1_Num, ::Type{DataHR}, sweep::PSweep) = fill(elem_0, DataHR, PSweep[sweep])
+
+#zeros & ones:
+Base.zeros(::Type{DataHR}, swlist::Vector{PSweep}) = fill(0.0, DataHR, swlist)
+Base.zeros(::Type{DataHR}, sweep::PSweep) = zeros(DataHR, PSweep[sweep])
+Base.ones(::Type{DataHR}, swlist::Vector{PSweep}) = fill(1.0, DataHR, swlist)
+Base.ones(::Type{DataHR}, sweep::PSweep) = ones(DataHR, PSweep[sweep])
 
 
 #==Data generation

@@ -22,6 +22,7 @@
     1. [demo1](doc/demo1.md)
  1. [Core architecture](doc/architecture.md)
     1. [Principal types](doc/architecture.md#PrincipalTypes)
+    1. [Object construction](doc/architecture.md#Constructors)
     1. [Functions of 1 argument (`DataF1`) & interpolation](doc/architecture.md#F1Arg)
     1. [Multi-dimensional datasets (`DataRS`) & broadcasting](doc/architecture.md#MDDatasets)
  1. [Supported functions](doc/architecture.md#SupportedFunctions)
@@ -54,24 +55,26 @@ More advanced usage examples can be found in the sample directories of [`CMDimDa
 ## Usage: Constructing a recursive-sweep dataset
 
 Assuming input data can be generated using the following:
+```julia
+t = DataF1((0:.01:10)*1e-9) #Time vector stored as a function of 1 argument
 
-	t = DataF1((0:.01:10)*1e-9) #Time vector stored as a function of 1 argument
-
-	#NOTE: get_ydata returns type "DataF1" (stores data as a function of 1 argument):
-	get_ydata(t::DataF1, tbit, vdd, trise) = sin(2pi*t/tbit)*(trise/tbit)+vdd
+#NOTE: get_ydata returns type "DataF1" (stores data as a function of 1 argument):
+get_ydata(t::DataF1, tbit, vdd, trise) = sin(2pi*t/tbit)*(trise/tbit)+vdd
+```
 
 One can create a relatively complex Recursive-Sweep (DataRS) dataset using the following pattern:
+```julia
+datars = fill(DataRS, PSweep("tbit", [1, 3, 9] * 1e-9)) do tbit
+	fill(DataRS, PSweep("VDD", 0.9 * [0.9, 1, 1.1])) do vdd
 
-	datars = fill(DataRS, PSweep("tbit", [1, 3, 9] * 1e-9)) do tbit
-		fill(DataRS, PSweep("VDD", 0.9 * [0.9, 1, 1.1])) do vdd
-
-			#Inner-most sweep: need to specify element type (DataF1):
-			#(Other (scalar) element types: DataInt/DataFloat/DataComplex)
-			fill(DataRS{DataF1}, PSweep("trise", [0.1, 0.15, 0.2] * tbit)) do trise
-				return get_ydata(t, tbit, vdd, trise)
-			end
+		#Inner-most sweep: need to specify element type (DataF1):
+		#(Other (scalar) element types: DataInt/DataFloat/DataComplex)
+		fill(DataRS{DataF1}, PSweep("trise", [0.1, 0.15, 0.2] * tbit)) do trise
+			return get_ydata(t, tbit, vdd, trise)
 		end
 	end
+end
+```
 
 <a name="KnownLimitations"></a>
 ## Known limitations

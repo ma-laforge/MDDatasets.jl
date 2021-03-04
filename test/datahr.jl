@@ -21,13 +21,35 @@ sweeplist3 = PSweep[ #Points of 2nd sweep are different than sweeplist1
 	PSweep("v2", [3,4])
 ]
 
-dhr1 = DataHR(sweeplist1,DataF1[d1 d1; d1 d1])
-dhr2 = DataHR(sweeplist2,DataF1[d1 d1; d1 d1])
-dhr3 = DataHR(sweeplist3,DataF1[d1 d1; d1 d1])
+#Construct using low-level functions:
+dhr1_ll = DataHR(sweeplist1,DataF1[d1 d1; d1 d1])
+
+dhr1 = fill(d1, DataHR, sweeplist1)
+dhr2 = fill(d1, DataHR, sweeplist2)
+dhr3 = fill(d1, DataHR, sweeplist3)
 
 
 #==Tests
 ===============================================================================#
+@testset "Validate _datamatch()" begin show_testset_description()
+	other = dhr1*1.0
+	@test !_datamatch(dhr1, other+1) #Make sure _datamatch works
+	@test _datamatch(dhr1, other)
+end
+
+@testset "Construction of DataHR objects" begin show_testset_description()
+	dhr1_0 = zeros(DataHR, sweeplist1)
+	dhr1_1 = ones(DataHR, sweeplist1)
+	dhr1_2 = fill(2, DataHR, sweeplist1)
+
+	@test _datamatch(dhr1_2-dhr1_1, dhr1_1)
+	@test _datamatch(dhr1_2-dhr1_1, dhr1_1)
+	@test _datamatch(dhr1_2-2*dhr1_1, dhr1_0)
+
+	@test _datamatch(dhr1_0.elem, zeros(Float64, size(DataHR, sweeplist1)))
+	@test _datamatch(dhr1_1.elem, ones(Float64, size(DataHR, sweeplist1)))
+end
+
 @testset "Broadcast operations on DataHR" begin show_testset_description()
 	s1 = dhr1 + dhr1
 	@testset "Validate s1 = dhr1+dhr2" begin
@@ -40,21 +62,17 @@ dhr3 = DataHR(sweeplist3,DataF1[d1 d1; d1 d1])
 	@test_throws ArgumentError dhr1+dhr3 #Mismatched sweeps
 end
 
-@testset "DataHR => DataRS conversion" begin show_testset_description()
-	drs1 = DataRS(dhr1)
+@testset "Conversion (DataRS <=> DataHR)" begin show_testset_description()
+	datahr_1 = dhr1
+	datars = convert(DataRS, datahr_1)
+	datahr_2 = convert(DataHR, datars)
+	@test _datamatch(datahr_1, datahr_2)
 
 	#Verify that the sweeps match:
-	@test drs1.sweep == dhr1.sweeps[1]
-	@test drs1.elem[1].sweep == dhr1.sweeps[2]
-	@test drs1.elem[2].sweep == dhr1.sweeps[2]
+	@test datars.sweep == dhr1.sweeps[1]
+	@test datars.elem[1].sweep == datahr_1.sweeps[2]
+	@test datars.elem[2].sweep == datahr_1.sweeps[2]
 
-	#Verify that each element of the two data structures match:
-	a = dhr1.sweeps
-	for i in 1:length(a[1]), j in 1:length(a[2])
-		_drs = drs1.elem[i].elem[j]; _dhr = dhr1.elem[i,j]
-		@test _drs.x == _dhr.x
-		@test _drs.y == _dhr.y
-	end
 end
 
 end

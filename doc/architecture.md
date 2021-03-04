@@ -10,6 +10,90 @@
 - **`DataRS{DataF1/DataInt/DataFloat/DataComplex}`**: A recursive-sweep organization of data.  Principally designed to collect massive datasets with *dependent* control variables([see examples](#SampleUsage_DataRS)).
 - **`PSweep`**: A parameter sweep (i.e. an independent control variable that generates experimental points in a `DataRS/DataHR` dataset).
 
+<a name="Constructors"></a>
+## Object construction
+Basic definitions are provided in this section. See [Sample usage](../README.md#SampleUsage) section for more examples.
+
+### Construction: `DataF1`
+ - `DataF1(x::Vector, y::Vector)`: Basic constructor
+   - `DataF1([1,2,3], [1,4,9])`
+ - `DataF1(rng::AbstractRange)`: Both x & y values are set to `collect(1:10)`
+   - `DataF1(1:10)`: `x = y = collect(1:10)`
+
+### Construction: `PSweep`
+Individual `PSweep` (parameter sweeps) are of single-dimension **only**:
+ - `PSweep(id::String, sweep::Vector)`: Basic constructor
+   - `PSweep("freq", [1, 2, 4, 8, 16] .* 1e3)`
+
+Mult-parameter sweeps are defined as a `PSweep[]` (`Vector`):
+```julia
+sweeplist = PSweep[
+	PSweep("A", [1, 2, 4])
+	PSweep("freq", [1, 2, 4, 8, 16] .* 1e3)
+	PSweep("phi", π .* [1/4, 1/3, 1/2])
+]
+```
+
+### Construction: `DataRS`
+Reminder: DataRS is a Recursive-Sweep data container.
+
+Basic construction:
+ - `fill(val::Number/DataF1, DataRS, sweeplist::Vector{PSweep})`
+   - `fill(32.0, DataRS, sweeplist)`
+   - `fill(DataF1(1:10), DataRS, sweeplist)`
+
+Generating a relatively complex, initial dataset is easy:
+```julia
+Tsim = 2e-3 #2ms
+
+sweeplist = PSweep[
+	PSweep("A", [1, 2, 4])
+	PSweep("freq", [1, 2, 4, 8, 16] .* 1e3)
+	PSweep("phi", π .* [1/4, 1/3, 1/2])
+]
+
+#Get t values for all swept parameters (DataRS structure):
+t = fill(DataF1(range(0,Tsim,length=1000)), DataRS, sweeplist)
+
+#Extract values of each parameter:
+𝑓 = parameter(t, "freq")
+A = parameter(t, "A")
+𝜙 = parameter(t, "phi")
+
+#Compute sinusoidal signal for each combination of swept parameter:
+𝜔 = 2π*𝑓 #Convenience
+sig = A * sin(𝜔*t + 𝜙)
+
+```
+
+ydata = fill(DataRS{DataF1}, PSweep("freq", [1, 2, 4, 8, 16] .* 1e3)) do 𝑓
+	𝜔 = 2π*𝑓; T = 1/𝑓; 𝜙 = 0; A = 1.2
+	sig = A * sin(𝜔*t + 𝜙)
+	return sig
+end;
+
+#### Construction: `DataRS` (read in data from simulation)
+A more flexible way to construct a `DataRS` structure is with the following pattern:
+```julia
+#Emulate results of a simulation:
+get_ydata(t, A, 𝑓, 𝜙) = A * sin((2π*𝑓)*t + 𝜙)
+
+Tsim = 2e-3 #2ms
+t = DataF1(range(0,Tsim,length=1000))
+
+sig = fill(DataRS, PSweep("A", [1, 2, 4])) do A
+	fill(DataRS, PSweep("freq", [1, 2, 4, 8, 16] .* 1e3)) do 𝑓
+
+		#Inner-most sweep: need to specify element type (DataF1):
+		#(or other (scalar) element types, when desired: DataInt/DataFloat/DataComplex)
+		fill(DataRS{DataF1}, PSweep("phi", π .* [1/4, 1/3, 1/2])) do 𝜙
+			return get_ydata(t, A, 𝑓, 𝜙)
+		end
+	end
+end
+```
+This construction method is particularly well suited to read in data from a simulation.
+
 <a name="F1Arg"></a>
 ## Functions of 1 argument (`DataF1`) & interpolation
 
@@ -53,9 +137,6 @@ TODO: Provide a means to re-order dimensions.
 
 <a name="SupportedFunctions"></a>
 # Supported functions
-
-## Constructors
- - **`fill`**`()`: Create a DataHR or DataRS structure (see examples for use).
 
 ## Helper functions
 
